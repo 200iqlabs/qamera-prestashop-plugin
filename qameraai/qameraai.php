@@ -18,6 +18,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once __DIR__ . '/classes/QameraApiClient.php';
+require_once __DIR__ . '/classes/QameraCatalogCache.php';
 
 class Qameraai extends Module
 {
@@ -51,10 +52,14 @@ class Qameraai extends Module
      */
     public function install()
     {
+        // displayAdminProductsExtra is the shared product-page tab hook on both
+        // PrestaShop 8.x and 9.x (product page v2). actionAdminControllerSetMedia
+        // enqueues the tab's JS/CSS on the product edit controller.
         return parent::install()
             && $this->installDb()
             && $this->installConfiguration()
-            && $this->registerHook('displayAdminProductsExtra');
+            && $this->registerHook('displayAdminProductsExtra')
+            && $this->registerHook('actionAdminControllerSetMedia');
     }
 
     /**
@@ -383,7 +388,31 @@ class Qameraai extends Module
     }
 
     /**
-     * Product-page tab (Core Flow generator UI lands here in M2+).
+     * Enqueue the product-tab assets on the product edit screen (PS8 + PS9).
+     *
+     * @param array $params
+     * @return void
+     */
+    public function hookActionAdminControllerSetMedia($params)
+    {
+        $controller = Tools::getValue('controller');
+        if ($controller !== 'AdminProducts' && $controller !== 'AdminProductsV2') {
+            return;
+        }
+
+        $this->context->controller->addCSS($this->_path . 'views/css/qamera-admin.css');
+        $this->context->controller->addJS($this->_path . 'views/js/qamera-product.js');
+    }
+
+    /**
+     * Product-page tab — Core Flow generator UI.
+     *
+     * Left column: source photo upload/role + session settings (catalog
+     * dropdowns). Right column: containers grouping each photo -> its packshots
+     * -> their sessions, with roles/approval derived from API voting and
+     * lineage (source_image_id, packshot_asset_id). State is read from the
+     * Qamera API — never duplicated locally. Empty state and catalog/state
+     * errors are surfaced explicitly (no white screen).
      *
      * @param array $params
      * @return string
@@ -391,12 +420,375 @@ class Qameraai extends Module
     public function hookDisplayAdminProductsExtra($params)
     {
         $idProduct = isset($params['id_product']) ? (int) $params['id_product'] : (int) Tools::getValue('id_product');
+        $client = $this->getApiClient();
 
-        $this->context->smarty->assign([
+        $assign = [
             'qamera_id_product' => $idProduct,
-            'qamera_has_key' => $this->getApiClient()->hasKey(),
-        ]);
+            'qamera_external_ref' => $this->buildExternalRef($idProduct),
+            'qamera_has_key' => $client->hasKey(),
+            'qamera_default_preset_id' => (string) Configuration::get(self::KEY_DEFAULT_PRESET_ID),
+            'qamera_models' => [],
+            'qamera_sceneries' => [],
+            'qamera_ai_models' => [],
+            'qamera_presets' => [],
+            'qamera_catalog_error' => '',
+            'qamera_containers' => [],
+            'qamera_standalone_packshots' => [],
+            'qamera_is_empty' => true,
+            'qamera_state_error' => '',
+        ];
 
-        return $this->display(__FILE__, 'views/templates/admin/product_tab.tpl');
+        if ($client->hasKey()) {
+            $catalog = $this->loadCatalog($client);
+            $view = $this->buildProductView($client, $idProduct);
+
+            $assign['qamera_models'] = $catalog['models'];
+            $assign['qamera_sceneries'] = $catalog['sceneries'];
+            $assign['qamera_ai_models'] = $catalog['ai_models'];
+            $assign['qamera_presets'] = $catalog['presets'];
+            $assign['qamera_catalog_error'] = $catalog['error'];
+            $assign['qamera_containers'] = $view['containers'];
+            $assign['qamera_standalone_packshots'] = $view['standalone'];
+            $assign['qamera_is_empty'] = $view['is_empty'];
+            $assign['qamera_state_error'] = $view['error'];
+        }
+
+        $this->context->smarty->assign($assign);
+
+        return $this->display(__FILE__, 'views/templates/hook/product-tab.tpl');
+    }
+
+    /**
+     * Stable shop->Qamera mapping key for a product.
+     * MVP is single-store; a shop{id_shop}- prefix is added when multistore lands.
+     *
+     * @param int $idProduct
+     * @return string
+     */
+    private function buildExternalRef($idProduct)
+    {
+        return 'ps-' . (int) $idProduct;
+    }
+
+    /**
+     * Load the slow-changing catalog (presets/models/sceneries/ai-models),
+     * cached 15 min. Each call is error-tolerant: a failed endpoint yields an
+     * empty list and a collected, human-readable error message.
+     *
+     * @param QameraApiClient $client
+     * @return array{models: array, sceneries: array, ai_models: array, presets: array, error: string}
+     */
+    private function loadCatalog(QameraApiClient $client)
+    {
+        $out = ['models' => [], 'sceneries' => [], 'ai_models' => [], 'presets' => [], 'error' => ''];
+        $errors = [];
+
+        $defs = [
+            'presets' => ['presets', function () use ($client) { return $client->get_presets(); }],
+            'models' => ['models', function () use ($client) { return $client->get_models(); }],
+            'sceneries' => ['sceneries', function () use ($client) { return $client->get_sceneries(); }],
+            'ai_models' => ['ai_models', function () use ($client) { return $client->get_ai_models(); }],
+        ];
+
+        foreach ($defs as $field => $def) {
+            list($listKey, $loader) = $def;
+            try {
+                $res = QameraCatalogCache::remember('catalog_' . $field, $loader);
+            } catch (QameraApiException $e) {
+                $errors[] = $e->getMessage();
+                continue;
+            }
+            $out[$field] = $this->extractList($res, $listKey);
+        }
+
+        if (!empty($errors)) {
+            $out['error'] = $this->l('Nie udało się pobrać katalogu Qamera AI:') . ' ' . implode(' ', array_unique($errors));
+        }
+
+        return $out;
+    }
+
+    /**
+     * Normalize an API list response into [{id, name}, ...].
+     * Accepts { <listKey>: [...] }, { data: [...] }, { items: [...] } or a bare list.
+     *
+     * @param mixed  $res
+     * @param string $listKey
+     * @return array
+     */
+    private function extractList($res, $listKey)
+    {
+        $list = [];
+        if (is_array($res)) {
+            if (isset($res[$listKey]) && is_array($res[$listKey])) {
+                $list = $res[$listKey];
+            } elseif (isset($res['data']) && is_array($res['data'])) {
+                $list = $res['data'];
+            } elseif (isset($res['items']) && is_array($res['items'])) {
+                $list = $res['items'];
+            } else {
+                $list = $res;
+            }
+        }
+
+        $out = [];
+        foreach ($list as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $id = isset($item['id']) ? (string) $item['id'] : (isset($item[$listKey . '_id']) ? (string) $item[$listKey . '_id'] : '');
+            if ($id === '') {
+                continue;
+            }
+            $name = isset($item['name'])
+                ? (string) $item['name']
+                : (isset($item['label']) ? (string) $item['label'] : (isset($item['title']) ? (string) $item['title'] : $id));
+            $out[] = ['id' => $id, 'name' => $name];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Build the right-column view model from API state: containers grouping
+     * photo -> packshots (by lineage source_image_id) -> sessions (by
+     * packshot_asset_id). Roles and approval come from API voting only.
+     *
+     * A 404 from /products means the product is not yet known to Qamera — that
+     * is the empty state, not an error. Any other failure is surfaced as a
+     * readable state error.
+     *
+     * @param QameraApiClient $client
+     * @param int             $idProduct
+     * @return array{containers: array, standalone: array, is_empty: bool, error: string}
+     */
+    private function buildProductView(QameraApiClient $client, $idProduct)
+    {
+        $view = ['containers' => [], 'standalone' => [], 'is_empty' => true, 'error' => ''];
+
+        try {
+            $product = $client->get_product($this->buildExternalRef($idProduct));
+        } catch (QameraApiException $e) {
+            if ($e->getHttpStatus() === 404) {
+                return $view; // not yet generated → empty state
+            }
+            $view['error'] = $e->getMessage();
+
+            return $view;
+        }
+
+        $images = $this->arr($product, 'images');
+        $packshots = $this->arr($product, 'packshots');
+
+        $sessionsByPackshot = $this->loadSessionsByPackshot($client);
+
+        // Group packshots under their source photo via lineage (source_image_id).
+        $packshotsByImage = [];
+        $standalone = [];
+        foreach ($packshots as $pk) {
+            if (!is_array($pk)) {
+                continue;
+            }
+            $node = $this->mapPackshot($pk, $sessionsByPackshot);
+            $srcImageId = isset($pk['source_image_id']) ? (string) $pk['source_image_id'] : '';
+            if ($srcImageId !== '') {
+                $packshotsByImage[$srcImageId][] = $node;
+            } else {
+                $standalone[] = $node; // direct packshot (no source photo)
+            }
+        }
+
+        $containers = [];
+        foreach ($images as $img) {
+            if (!is_array($img)) {
+                continue;
+            }
+            $imgId = isset($img['id'])
+                ? (string) $img['id']
+                : (isset($img['source_image_id']) ? (string) $img['source_image_id'] : '');
+            $containers[] = [
+                'photo' => [
+                    'id' => $imgId,
+                    'url' => $this->pick($img, ['url', 'image_url', 'asset_url']),
+                    'thumb' => $this->pick($img, ['thumbnail_url', 'thumb_url', 'url']),
+                    'asset_id' => isset($img['asset_id']) ? (string) $img['asset_id'] : '',
+                    'analysis_status' => isset($img['analysis_status']) ? (string) $img['analysis_status'] : '',
+                ],
+                'packshots' => isset($packshotsByImage[$imgId]) ? $packshotsByImage[$imgId] : [],
+            ];
+        }
+
+        $view['containers'] = $containers;
+        $view['standalone'] = $standalone;
+        $view['is_empty'] = (count($images) === 0 && count($packshots) === 0);
+
+        return $view;
+    }
+
+    /**
+     * Map one API packshot to the view node, deriving role/approval from voting
+     * (accepted -> approved, pending, rejected) and attaching its sessions by
+     * packshot_asset_id.
+     *
+     * @param array $pk
+     * @param array $sessionsByPackshot
+     * @return array
+     */
+    private function mapPackshot(array $pk, array $sessionsByPackshot)
+    {
+        $assetId = isset($pk['packshot_asset_id'])
+            ? (string) $pk['packshot_asset_id']
+            : (isset($pk['asset_id']) ? (string) $pk['asset_id'] : '');
+        $state = $this->votingState($pk);
+
+        return [
+            'id' => isset($pk['id']) ? (string) $pk['id'] : $assetId,
+            'asset_id' => $assetId,
+            'url' => $this->pick($pk, ['url', 'image_url', 'asset_url']),
+            'thumb' => $this->pick($pk, ['thumbnail_url', 'thumb_url', 'url']),
+            'voting' => $state,
+            'approved' => ($state === 'accepted'),
+            'pending' => ($state === 'pending'),
+            'rejected' => ($state === 'rejected'),
+            'generated' => !empty($pk['generated_by_job_id']),
+            'sessions' => isset($sessionsByPackshot[$assetId]) ? $sessionsByPackshot[$assetId] : [],
+        ];
+    }
+
+    /**
+     * Build a map packshot_asset_id -> [session, ...] from GET /jobs.
+     * Each session carries its outputs with per-output voting. Sessions are
+     * optional context: a failed /jobs call returns an empty map so packshots
+     * still render.
+     *
+     * @param QameraApiClient $client
+     * @return array
+     */
+    private function loadSessionsByPackshot(QameraApiClient $client)
+    {
+        $byPackshot = [];
+
+        try {
+            $res = $client->list_jobs(100);
+        } catch (QameraApiException $e) {
+            return $byPackshot;
+        }
+
+        $jobs = $this->arr($res, 'jobs');
+        if (empty($jobs)) {
+            $jobs = $this->arr($res, 'items');
+        }
+
+        foreach ($jobs as $job) {
+            if (!is_array($job)) {
+                continue;
+            }
+            $type = isset($job['job_type']) ? (string) $job['job_type'] : '';
+            if ($type !== '' && $type !== 'photo_shoot') {
+                continue; // only sessions
+            }
+            $packAsset = isset($job['packshot_asset_id']) ? (string) $job['packshot_asset_id'] : '';
+            if ($packAsset === '') {
+                continue;
+            }
+
+            $outputs = [];
+            foreach ($this->arr($job, 'outputs') as $o) {
+                if (!is_array($o)) {
+                    continue;
+                }
+                $st = $this->votingState($o);
+                $outputs[] = [
+                    'url' => $this->pick($o, ['url', 'image_url', 'asset_url']),
+                    'thumb' => $this->pick($o, ['thumbnail_url', 'thumb_url', 'url']),
+                    'asset_id' => isset($o['asset_id']) ? (string) $o['asset_id'] : '',
+                    'voting' => $st,
+                    'approved' => ($st === 'accepted'),
+                ];
+            }
+
+            $byPackshot[$packAsset][] = [
+                'job_id' => isset($job['id']) ? (string) $job['id'] : (isset($job['job_id']) ? (string) $job['job_id'] : ''),
+                'status' => isset($job['status']) ? (string) $job['status'] : '',
+                'voting' => $this->votingState($job),
+                'outputs' => $outputs,
+            ];
+        }
+
+        return $byPackshot;
+    }
+
+    /**
+     * Normalize the API voting signal to one of accepted|pending|rejected.
+     * Accepts a string, a {state|status} map, or boolean accepted/approved flags.
+     *
+     * @param mixed $node
+     * @return string
+     */
+    private function votingState($node)
+    {
+        if (!is_array($node)) {
+            return 'pending';
+        }
+
+        $v = isset($node['voting']) ? $node['voting'] : null;
+        if (is_string($v) && $v !== '') {
+            return $v;
+        }
+        if (is_array($v)) {
+            if (isset($v['state']) && is_string($v['state']) && $v['state'] !== '') {
+                return $v['state'];
+            }
+            if (isset($v['status']) && is_string($v['status']) && $v['status'] !== '') {
+                return $v['status'];
+            }
+            if (!empty($v['accepted'])) {
+                return 'accepted';
+            }
+            if (!empty($v['rejected'])) {
+                return 'rejected';
+            }
+
+            return 'pending';
+        }
+
+        if (array_key_exists('accepted', $node)) {
+            return $node['accepted'] ? 'accepted' : 'pending';
+        }
+        if (array_key_exists('approved', $node)) {
+            return $node['approved'] ? 'accepted' : 'pending';
+        }
+
+        return 'pending';
+    }
+
+    /**
+     * Safely read a sub-array by key.
+     *
+     * @param mixed  $node
+     * @param string $key
+     * @return array
+     */
+    private function arr($node, $key)
+    {
+        return (is_array($node) && isset($node[$key]) && is_array($node[$key])) ? $node[$key] : [];
+    }
+
+    /**
+     * First non-empty string value among $keys.
+     *
+     * @param array $node
+     * @param array $keys
+     * @return string
+     */
+    private function pick(array $node, array $keys)
+    {
+        foreach ($keys as $k) {
+            if (isset($node[$k]) && is_string($node[$k]) && $node[$k] !== '') {
+                return $node[$k];
+            }
+        }
+
+        return '';
     }
 }

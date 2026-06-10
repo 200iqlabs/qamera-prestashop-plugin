@@ -1,0 +1,152 @@
+/*
+ * Qamera AI for PrestaShop — product-tab admin styles.
+ * Brand: graphite #252b30, teal accent #83babc, light UI.
+ * Inter font, tokens: button 6px/36px, CTA 12px/48px, card 16px, input 8px.
+ */
+
+.qamera-tab {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1a1a1a;
+    background: #ffffff;
+}
+
+.qamera-tab__title {
+    color: #252b30;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+/* ── Alerts / states ─────────────────────────────────────────── */
+.qamera-alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 0 0 16px;
+    font-size: 14px;
+}
+.qamera-alert--warning { background: #fff8e1; border: 1px solid #ffe082; }
+.qamera-alert--error { background: #fdecea; border: 1px solid #f5c6cb; color: #842029; }
+
+.qamera-empty {
+    padding: 32px;
+    text-align: center;
+    border: 1px dashed #e5e7eb;
+    border-radius: 16px;
+    color: #6b7280;
+}
+.qamera-empty__hint { font-size: 13px; color: #9ca3af; }
+.qamera-muted { color: #9ca3af; font-size: 13px; }
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.qamera-grid {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+.qamera-col--left { flex: 0 0 320px; max-width: 320px; }
+.qamera-col--right { flex: 1 1 auto; min-width: 0; }
+
+@media (max-width: 768px) {
+    .qamera-grid { flex-direction: column; }
+    .qamera-col--left { flex-basis: auto; max-width: none; width: 100%; }
+}
+
+/* ── Cards / fields ──────────────────────────────────────────── */
+.qamera-card {
+    border: 1px solid #f3f4f6;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.qamera-card__title { color: #252b30; font-weight: 600; margin: 0 0 12px; }
+
+.qamera-field { margin-bottom: 12px; }
+.qamera-field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.qamera-field input[type="text"],
+.qamera-field input[type="number"],
+.qamera-field input[type="file"],
+.qamera-field select,
+.qamera-field textarea {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    box-sizing: border-box;
+}
+.qamera-field--inline { display: flex; gap: 8px; align-items: flex-end; }
+.qamera-field--inline > * { flex: 1; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.qamera-btn {
+    border: 0;
+    border-radius: 6px;
+    height: 48px;
+    padding: 0 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
+.qamera-btn--primary { background: #83babc; color: #ffffff; }
+.qamera-btn--primary:hover { background: #6fa9ab; }
+.qamera-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Containers: photo -> packshots -> sessions ──────────────── */
+.qamera-container {
+    display: flex;
+    gap: 16px;
+    border: 1px solid #f3f4f6;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.qamera-container__photo { flex: 0 0 160px; max-width: 160px; }
+.qamera-container__packshots { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+
+.qamera-packshot,
+.qamera-output {
+    position: relative;
+    margin: 0;
+    border: 2px solid #f3f4f6;
+    border-radius: 12px;
+    padding: 8px;
+    width: 160px;
+}
+.qamera-packshot img,
+.qamera-output img,
+.qamera-container__photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+.qamera-thumb--placeholder {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+
+/* Voting state borders. */
+.qamera-vote--accepted { border-color: #83babc; }
+.qamera-vote--rejected { border-color: #f5c6cb; opacity: .6; }
+.qamera-vote--pending { border-color: #e5e7eb; }
+
+.qamera-sessions { width: 100%; margin-top: 8px; }
+.qamera-session { border-top: 1px solid #f3f4f6; padding-top: 8px; margin-top: 8px; }
+.qamera-session__outputs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+/* ── Badges ──────────────────────────────────────────────────── */
+.qamera-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin: 0 4px 4px 0;
+}
+.qamera-badge--role { background: #83babc; color: #ffffff; }
+.qamera-badge--accepted { background: #e3f1f1; color: #2a6e70; }
+.qamera-badge--pending { background: #f3f4f6; color: #6b7280; }
+.qamera-badge--rejected { background: #fdecea; color: #842029; }
+
+.qamera-meta { display: block; font-size: 12px; color: #6b7280; margin-top: 4px; }

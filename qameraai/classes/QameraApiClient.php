@@ -78,6 +78,104 @@ class QameraApiClient
     }
 
     /**
+     * Product state with embedded images + packshots (roles, voting, lineage).
+     * GET /api/v1/plugin/products/{external_ref}
+     *
+     * Response is the source of truth for generation state. Expected shape
+     * (defensively parsed by the caller — keys may drift):
+     *   {
+     *     external_ref, product_ref, display_name,
+     *     images:    [ { id, asset_id, url, thumbnail_url, analysis_status } ],
+     *     packshots: [ { id, packshot_asset_id|asset_id, source_image_id,
+     *                    generated_by_job_id, url, thumbnail_url,
+     *                    voting: "accepted"|"pending"|"rejected" } ]
+     *   }
+     *
+     * @param string $externalRef Stable shop->Qamera map key (e.g. ps-{id_product}).
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function get_product($externalRef)
+    {
+        return $this->request('GET', '/products/' . rawurlencode((string) $externalRef));
+    }
+
+    /**
+     * List jobs (sessions/packshot generations) for the account.
+     * GET /api/v1/plugin/jobs
+     *
+     * Used to attach session results to their source packshot (by
+     * packshot_asset_id) since /products has no embedded session lineage.
+     *
+     * @param int    $limit  Page size (0 = server default).
+     * @param string $cursor Pagination cursor.
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function list_jobs($limit = 50, $cursor = '')
+    {
+        $query = [];
+        if ((int) $limit > 0) {
+            $query['limit'] = (int) $limit;
+        }
+        if ((string) $cursor !== '') {
+            $query['cursor'] = (string) $cursor;
+        }
+        $qs = $query ? ('?' . http_build_query($query)) : '';
+
+        return $this->request('GET', '/jobs' . $qs);
+    }
+
+    /**
+     * Single job with outputs + voting + status (polling fallback).
+     * GET /api/v1/plugin/jobs/{id}
+     *
+     * @param string $jobId
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function get_job($jobId)
+    {
+        return $this->request('GET', '/jobs/' . rawurlencode((string) $jobId));
+    }
+
+    /**
+     * Available mannequin/models for the account (account + marketplace).
+     * GET /api/v1/plugin/models
+     *
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function get_models()
+    {
+        return $this->request('GET', '/models');
+    }
+
+    /**
+     * Available sceneries (account + marketplace).
+     * GET /api/v1/plugin/sceneries
+     *
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function get_sceneries()
+    {
+        return $this->request('GET', '/sceneries');
+    }
+
+    /**
+     * Available generative AI models (filtered by account plan).
+     * GET /api/v1/plugin/ai-models
+     *
+     * @return array Decoded JSON body on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function get_ai_models()
+    {
+        return $this->request('GET', '/ai-models');
+    }
+
+    /**
      * Perform an HTTP request against the plugin API.
      *
      * @param string     $method  HTTP verb
