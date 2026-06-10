@@ -436,6 +436,7 @@ class Qameraai extends Module
             'qamera_standalone_packshots' => [],
             'qamera_is_empty' => true,
             'qamera_state_error' => '',
+            'qamera_truncated' => false,
         ];
 
         if ($client->hasKey()) {
@@ -451,6 +452,7 @@ class Qameraai extends Module
             $assign['qamera_standalone_packshots'] = $view['standalone'];
             $assign['qamera_is_empty'] = $view['is_empty'];
             $assign['qamera_state_error'] = $view['error'];
+            $assign['qamera_truncated'] = $view['truncated'];
         }
 
         $this->context->smarty->assign($assign);
@@ -536,6 +538,10 @@ class Qameraai extends Module
             if (!is_array($item)) {
                 continue;
             }
+            // ai-models include video generators; sessions produce images only.
+            if ($listKey === 'ai_models' && isset($item['output_type']) && $item['output_type'] !== 'image') {
+                continue;
+            }
             $id = isset($item['id']) ? (string) $item['id'] : (isset($item[$listKey . '_id']) ? (string) $item[$listKey . '_id'] : '');
             if ($id === '') {
                 continue;
@@ -564,23 +570,31 @@ class Qameraai extends Module
      */
     private function buildProductView(QameraApiClient $client, $idProduct)
     {
-        $view = ['containers' => [], 'standalone' => [], 'is_empty' => true, 'error' => ''];
+        $view = ['containers' => [], 'standalone' => [], 'is_empty' => true, 'error' => '', 'truncated' => false];
+
+        $externalRef = $this->buildExternalRef($idProduct);
 
         try {
-            $product = $client->get_product($this->buildExternalRef($idProduct));
+            $product = $client->get_product($externalRef);
         } catch (QameraApiException $e) {
             if ($e->getHttpStatus() === 404) {
-                return $view; // not yet generated → empty state
+                return $view; // not yet known to Qamera → empty state
             }
             $view['error'] = $e->getMessage();
 
             return $view;
         }
 
+        // ProductDetailResponse: images[] (ProductImage), packshots[] (ProductPackshot).
         $images = $this->arr($product, 'images');
         $packshots = $this->arr($product, 'packshots');
 
-        $sessionsByPackshot = $this->loadSessionsByPackshot($client);
+        // Jobs (sessions + packshot generations) scoped to THIS product by
+        // product_ref. jobsById resolves generated images by generated_by_job_id;
+        // sessionsByPackshot groups photo_shoot results under their source packshot.
+        $jobIndex = $this->loadJobsForProduct($client, $externalRef);
+        $jobsById = $jobIndex['by_id'];
+        $sessionsByPackshot = $jobIndex['sessions_by_packshot'];
 
         // Group packshots under their source photo via lineage (source_image_id).
         $packshotsByImage = [];
@@ -589,8 +603,10 @@ class Qameraai extends Module
             if (!is_array($pk)) {
                 continue;
             }
-            $node = $this->mapPackshot($pk, $sessionsByPackshot);
-            $srcImageId = isset($pk['source_image_id']) ? (string) $pk['source_image_id'] : '';
+            $node = $this->mapPackshot($pk, $sessionsByPackshot, $jobsById);
+            $srcImageId = isset($pk['source_image_id']) && $pk['source_image_id'] !== null
+                ? (string) $pk['source_image_id']
+                : '';
             if ($srcImageId !== '') {
                 $packshotsByImage[$srcImageId][] = $node;
             } else {
@@ -603,14 +619,18 @@ class Qameraai extends Module
             if (!is_array($img)) {
                 continue;
             }
-            $imgId = isset($img['id'])
-                ? (string) $img['id']
-                : (isset($img['source_image_id']) ? (string) $img['source_image_id'] : '');
+            $imgId = isset($img['id']) ? (string) $img['id'] : '';
+            // ProductImage carries no display URL — resolve to the local
+            // PrestaShop image via external_ref (ps-img-{id_image}).
+            $localUrl = $this->resolveLocalImageUrl(
+                isset($img['external_ref']) ? (string) $img['external_ref'] : '',
+                $idProduct
+            );
             $containers[] = [
                 'photo' => [
                     'id' => $imgId,
-                    'url' => $this->pick($img, ['url', 'image_url', 'asset_url']),
-                    'thumb' => $this->pick($img, ['thumbnail_url', 'thumb_url', 'url']),
+                    'url' => $localUrl,
+                    'thumb' => $localUrl,
                     'asset_id' => isset($img['asset_id']) ? (string) $img['asset_id'] : '',
                     'analysis_status' => isset($img['analysis_status']) ? (string) $img['analysis_status'] : '',
                 ],
@@ -621,101 +641,164 @@ class Qameraai extends Module
         $view['containers'] = $containers;
         $view['standalone'] = $standalone;
         $view['is_empty'] = (count($images) === 0 && count($packshots) === 0);
+        $view['truncated'] = !empty($product['images_truncated']) || !empty($product['packshots_truncated']);
 
         return $view;
     }
 
     /**
-     * Map one API packshot to the view node, deriving role/approval from voting
-     * (accepted -> approved, pending, rejected) and attaching its sessions by
-     * packshot_asset_id.
+     * Map one ProductPackshot to the view node. Role/approval come from the
+     * PackshotVoting enum (pending|accepted|rejected). The generated image has
+     * no URL on the catalog row — it is resolved from the producing job
+     * (generated_by_job_id) when available. Sessions are attached by asset_id.
      *
      * @param array $pk
-     * @param array $sessionsByPackshot
+     * @param array $sessionsByPackshot Map asset_id -> [session, ...]
+     * @param array $jobsById           Map job_id -> job (for image resolution)
      * @return array
      */
-    private function mapPackshot(array $pk, array $sessionsByPackshot)
+    private function mapPackshot(array $pk, array $sessionsByPackshot, array $jobsById)
     {
-        $assetId = isset($pk['packshot_asset_id'])
-            ? (string) $pk['packshot_asset_id']
-            : (isset($pk['asset_id']) ? (string) $pk['asset_id'] : '');
-        $state = $this->votingState($pk);
+        $assetId = isset($pk['asset_id']) ? (string) $pk['asset_id'] : '';
+        $state = $this->votingState($pk); // PackshotVoting: pending|accepted|rejected
+
+        $genJobId = isset($pk['generated_by_job_id']) && $pk['generated_by_job_id'] !== null
+            ? (string) $pk['generated_by_job_id']
+            : '';
+        $url = '';
+        if ($genJobId !== '' && isset($jobsById[$genJobId])) {
+            $url = $this->firstOutputUrl($jobsById[$genJobId]);
+        }
 
         return [
             'id' => isset($pk['id']) ? (string) $pk['id'] : $assetId,
             'asset_id' => $assetId,
-            'url' => $this->pick($pk, ['url', 'image_url', 'asset_url']),
-            'thumb' => $this->pick($pk, ['thumbnail_url', 'thumb_url', 'url']),
+            'url' => $url,
+            'thumb' => $url,
             'voting' => $state,
             'approved' => ($state === 'accepted'),
             'pending' => ($state === 'pending'),
             'rejected' => ($state === 'rejected'),
-            'generated' => !empty($pk['generated_by_job_id']),
+            'generated' => ($genJobId !== ''),
             'sessions' => isset($sessionsByPackshot[$assetId]) ? $sessionsByPackshot[$assetId] : [],
         ];
     }
 
     /**
-     * Build a map packshot_asset_id -> [session, ...] from GET /jobs.
-     * Each session carries its outputs with per-output voting. Sessions are
-     * optional context: a failed /jobs call returns an empty map so packshots
-     * still render.
+     * Fetch the account's jobs, scope to this product by product_ref, and build:
+     *  - by_id: job_id -> job (resolves packshot/output images on re-render),
+     *  - sessions_by_packshot: packshot_asset_id -> [session-result tile, ...].
+     *
+     * Each photo_shoot job is one generated image with its OWN voting (the
+     * Voting enum lives on the job, not on JobOutput). Sessions are optional
+     * context — a failed /jobs call yields empty maps so packshots still render.
      *
      * @param QameraApiClient $client
-     * @return array
+     * @param string          $externalRef Product external_ref to match product_ref.
+     * @return array{by_id: array, sessions_by_packshot: array}
      */
-    private function loadSessionsByPackshot(QameraApiClient $client)
+    private function loadJobsForProduct(QameraApiClient $client, $externalRef)
     {
-        $byPackshot = [];
+        $byId = [];
+        $sessionsByPackshot = [];
 
         try {
             $res = $client->list_jobs(100);
         } catch (QameraApiException $e) {
-            return $byPackshot;
+            return ['by_id' => $byId, 'sessions_by_packshot' => $sessionsByPackshot];
         }
 
         $jobs = $this->arr($res, 'jobs');
-        if (empty($jobs)) {
-            $jobs = $this->arr($res, 'items');
-        }
 
         foreach ($jobs as $job) {
             if (!is_array($job)) {
                 continue;
             }
+            $jobId = isset($job['id']) ? (string) $job['id'] : '';
+            if ($jobId !== '') {
+                $byId[$jobId] = $job;
+            }
+
+            // Scope to this product.
+            $productRef = isset($job['product_ref']) && $job['product_ref'] !== null ? (string) $job['product_ref'] : '';
+            if ($externalRef !== '' && $productRef !== '' && $productRef !== $externalRef) {
+                continue;
+            }
+
             $type = isset($job['job_type']) ? (string) $job['job_type'] : '';
             if ($type !== '' && $type !== 'photo_shoot') {
-                continue; // only sessions
+                continue; // sessions only (packshot jobs render via generated_by_job_id)
             }
-            $packAsset = isset($job['packshot_asset_id']) ? (string) $job['packshot_asset_id'] : '';
+            $packAsset = isset($job['packshot_asset_id']) && $job['packshot_asset_id'] !== null
+                ? (string) $job['packshot_asset_id']
+                : '';
             if ($packAsset === '') {
                 continue;
             }
 
-            $outputs = [];
-            foreach ($this->arr($job, 'outputs') as $o) {
-                if (!is_array($o)) {
-                    continue;
-                }
-                $st = $this->votingState($o);
-                $outputs[] = [
-                    'url' => $this->pick($o, ['url', 'image_url', 'asset_url']),
-                    'thumb' => $this->pick($o, ['thumbnail_url', 'thumb_url', 'url']),
-                    'asset_id' => isset($o['asset_id']) ? (string) $o['asset_id'] : '',
-                    'voting' => $st,
-                    'approved' => ($st === 'accepted'),
-                ];
-            }
-
-            $byPackshot[$packAsset][] = [
-                'job_id' => isset($job['id']) ? (string) $job['id'] : (isset($job['job_id']) ? (string) $job['job_id'] : ''),
+            $state = $this->votingState($job); // Voting: accepted|rejected|null(->pending)
+            $sessionsByPackshot[$packAsset][] = [
+                'job_id' => $jobId,
                 'status' => isset($job['status']) ? (string) $job['status'] : '',
-                'voting' => $this->votingState($job),
-                'outputs' => $outputs,
+                'voting' => $state,
+                'approved' => ($state === 'accepted'),
+                'rejected' => ($state === 'rejected'),
+                'url' => $this->firstOutputUrl($job),
+                'thumb' => $this->firstOutputUrl($job),
             ];
         }
 
-        return $byPackshot;
+        return ['by_id' => $byId, 'sessions_by_packshot' => $sessionsByPackshot];
+    }
+
+    /**
+     * First signed download URL among a job's outputs (JobOutput.url), or ''.
+     *
+     * @param array $job
+     * @return string
+     */
+    private function firstOutputUrl(array $job)
+    {
+        foreach ($this->arr($job, 'outputs') as $o) {
+            if (is_array($o) && isset($o['url']) && is_string($o['url']) && $o['url'] !== '') {
+                return $o['url'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Resolve a Qamera catalog image's external_ref (ps-img-{id_image}) to a
+     * local PrestaShop image URL. Catalog rows carry no display URL, and the
+     * source photo is the merchant's own gallery image. Returns '' on no match.
+     *
+     * @param string $externalRef
+     * @param int    $idProduct
+     * @return string
+     */
+    private function resolveLocalImageUrl($externalRef, $idProduct)
+    {
+        if (!preg_match('/img-(\d+)$/', (string) $externalRef, $m)) {
+            return '';
+        }
+        $idImage = (int) $m[1];
+        if ($idImage <= 0) {
+            return '';
+        }
+
+        try {
+            $idLang = (int) $this->context->language->id;
+            $product = new Product((int) $idProduct, false, $idLang);
+            $rewrite = is_array($product->link_rewrite) ? reset($product->link_rewrite) : $product->link_rewrite;
+            if (!$rewrite) {
+                $rewrite = 'product';
+            }
+
+            return $this->context->link->getImageLink($rewrite, $idProduct . '-' . $idImage, 'home_default');
+        } catch (Exception $e) {
+            return '';
+        }
     }
 
     /**
@@ -772,23 +855,5 @@ class Qameraai extends Module
     private function arr($node, $key)
     {
         return (is_array($node) && isset($node[$key]) && is_array($node[$key])) ? $node[$key] : [];
-    }
-
-    /**
-     * First non-empty string value among $keys.
-     *
-     * @param array $node
-     * @param array $keys
-     * @return string
-     */
-    private function pick(array $node, array $keys)
-    {
-        foreach ($keys as $k) {
-            if (isset($node[$k]) && is_string($node[$k]) && $node[$k] !== '') {
-                return $node[$k];
-            }
-        }
-
-        return '';
     }
 }

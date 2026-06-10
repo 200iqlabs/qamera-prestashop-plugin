@@ -120,6 +120,12 @@
                     </div>
                 {else}
 
+                    {if $qamera_truncated}
+                        <p class="qamera-alert qamera-alert--warning">
+                            {l s='Produkt ma ponad 100 zdjęć lub packshotów — pokazano pierwszą setkę.' mod='qameraai'}
+                        </p>
+                    {/if}
+
                     {foreach from=$qamera_containers item=container}
                         <section class="qamera-container" data-image-id="{$container.photo.id|escape:'htmlall':'UTF-8'}">
                             <div class="qamera-container__photo">

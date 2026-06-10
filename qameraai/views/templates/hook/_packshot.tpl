@@ -24,30 +24,32 @@
         <div class="qamera-thumb qamera-thumb--placeholder"></div>
     {/if}
 
-    {* Session results from this packshot (grouped by packshot_asset_id). *}
+    {* Session results from this packshot (one job = one image, job-level voting). *}
     {if $packshot.sessions|@count > 0}
         <div class="qamera-sessions">
-            {foreach from=$packshot.sessions item=session}
-                <div class="qamera-session" data-job-id="{$session.job_id|escape:'htmlall':'UTF-8'}" data-status="{$session.status|escape:'htmlall':'UTF-8'}">
-                    <span class="qamera-meta">{l s='Sesja:' mod='qameraai'} {$session.status|escape:'htmlall':'UTF-8'}</span>
-                    <div class="qamera-session__outputs">
-                        {foreach from=$session.outputs item=output}
-                            <figure class="qamera-output qamera-vote--{$output.voting|escape:'htmlall':'UTF-8'}"
-                                    data-asset-id="{$output.asset_id|escape:'htmlall':'UTF-8'}"
-                                    data-approved="{if $output.approved}1{else}0{/if}">
-                                {if $output.url}
-                                    <img src="{$output.thumb|escape:'htmlall':'UTF-8'}" alt="" loading="lazy" />
-                                {else}
-                                    <div class="qamera-thumb qamera-thumb--placeholder"></div>
-                                {/if}
-                                {if $output.approved}
-                                    <span class="qamera-badge qamera-badge--accepted">{l s='Zatwierdzony' mod='qameraai'}</span>
-                                {/if}
-                            </figure>
-                        {/foreach}
-                    </div>
-                </div>
-            {/foreach}
+            <span class="qamera-meta">{l s='Sesje' mod='qameraai'}</span>
+            <div class="qamera-session__outputs">
+                {foreach from=$packshot.sessions item=session}
+                    <figure class="qamera-output qamera-vote--{$session.voting|escape:'htmlall':'UTF-8'}"
+                            data-job-id="{$session.job_id|escape:'htmlall':'UTF-8'}"
+                            data-status="{$session.status|escape:'htmlall':'UTF-8'}"
+                            data-voting="{$session.voting|escape:'htmlall':'UTF-8'}"
+                            data-approved="{if $session.approved}1{else}0{/if}">
+                        {if $session.url}
+                            <img src="{$session.thumb|escape:'htmlall':'UTF-8'}" alt="" loading="lazy" />
+                        {else}
+                            <div class="qamera-thumb qamera-thumb--placeholder"></div>
+                        {/if}
+                        {if $session.approved}
+                            <span class="qamera-badge qamera-badge--accepted">{l s='Zatwierdzony' mod='qameraai'}</span>
+                        {elseif $session.rejected}
+                            <span class="qamera-badge qamera-badge--rejected">{l s='Odrzucony' mod='qameraai'}</span>
+                        {else}
+                            <span class="qamera-meta">{$session.status|escape:'htmlall':'UTF-8'}</span>
+                        {/if}
+                    </figure>
+                {/foreach}
+            </div>
         </div>
     {/if}
 </figure>
