@@ -48,6 +48,12 @@ NIE jej architekturę (WooCommerce duplikuje stan w post_meta — my nie).
 - Referencja implementacji (port): wtyczka WooCommerce `C:\Projects\qamera-woocommerce`.
 - **Przy pracy z endpointami sprawdzaj kontrakt w OpenAPI, nie zgaduj kształtu payloadu/odpowiedzi.**
 
+### Dokumentacja PrestaShop (dev docs — celuj w kompat 8 + 9)
+- PS 8 (kompatybilność wsteczna — bazowa): https://devdocs.prestashop-project.org/8/
+- PS 9 (najnowsza): https://devdocs.prestashop-project.org/9/
+- Moduły: https://devdocs.prestashop-project.org/8/modules/ · Hooki: https://devdocs.prestashop-project.org/8/modules/concepts/hooks/
+- **Sprawdzaj różnice 8↔9 w devdocs zanim użyjesz API, które mogło się zmienić (hooki, ObjectModel, kontrolery).**
+
 ### Brand (stosuj w KAŻDYM ekranie — pełny: `context/brand.md`)
 - Kolory: grafit `#252b30` (nagłówki), **akcent teal `#83babc`** (przyciski primary, aktywna zakładka, plakietki ról), biały `#ffffff`. UI light: bg `#ffffff`, tekst `#1a1a1a`, border `#f3f4f6`, input `#e5e7eb`.
 - Font: **Inter** (400/500/600/700). Tokeny: button 6px/36px, CTA 12px/48px, card 16px, input 8px.
