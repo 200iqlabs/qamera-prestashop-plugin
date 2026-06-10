@@ -78,3 +78,4 @@ ZIP instalacyjny modułu.
 Dopisuj 1 linię na sesję. Format: `[data] M{N}: decyzja — dlaczego (odwołanie do §X prd.md)`.
 
 - [2026-06-10] Plan: wrapper Thin-B (Configuration + 2 tabele ID), sync w AJAX + polling, bez webhooka w MVP, PS8+9 — bo serwer Qamery eksponuje stan przez voting+lineage, więc lokalna duplikacja zbędna (§1, §4, §5 prd.md).
+- [2026-06-10] M1: szkielet modułu + QameraApiClient gotowe i zlintowane (php 8.1). Smoke test realnego API przeszedł — `GET /me` zwraca `credits_balance`/`account_name` (poprawiono parsowanie renderAccountStatus pod realny kontrakt), `GET /presets` zwraca `{presets:[{id,slug,name,...}]}`. Dodano env testowy: docker-compose (PS8 :8082, PS9 :8091, profile ps8/ps9, moduł montowany live) + tools/smoke-api.php. PS8 wstaje, moduł zamontowany, admin /admin-dev dostępny.

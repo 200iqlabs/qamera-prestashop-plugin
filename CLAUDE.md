@@ -78,3 +78,17 @@ pełna duplikacja stanu lokalnie (model Heavy).
 - Runtime: klucz API żyje w `ps_configuration` (ekran ustawień modułu), NIE w `.env`.
 - `.env.example` = szablon dla dev/smoke-test; kopiujesz do `.env` (w `.gitignore`).
 - **NIGDY nie commituj `.env` ani klucza `mk_live_...`** do repo.
+
+### Środowisko dev / test (jak uruchomić, nie odkrywaj od nowa)
+- **PrestaShop przez Docker** (`docker-compose.yml`, profile):
+  - `docker compose --profile ps8 up -d` → PS8 na `http://localhost:8082` (8081 bywa zajęty).
+  - `docker compose --profile ps9 up -d` → PS9 na `http://localhost:8091`.
+  - Admin: `/admin-dev`, login `admin@qamera.test` / hasło `qameraadmin1`.
+  - Moduł montowany live z `./qameraai` → zmiany w kodzie widać po odświeżeniu (czasem wyczyść cache PS).
+  - Reset: `docker compose --profile ps8 down -v` (kasuje bazę + pliki sklepu).
+- **PHP CLI** (winget, brak na PATH bieżącej sesji): `C:\Users\pawel\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.1_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe`.
+  - `php -l <plik>` do lintu. CLI nie ma włączonego curl/openssl ani CA — dla skryptów sieciowych dodaj flagi:
+    `-d extension_dir="<base>\ext" -d extension=curl -d extension=openssl -d curl.cainfo="tools\cacert.pem"`.
+- **Smoke / probe API** (`tools/`, poza modułem, NIE shippowane): `tools/smoke-api.php` (`/me` + `/presets`),
+  `tools/probe-m2.php` (`/jobs`, `/products/{ref}`). Czytają klucz z `.env`. `tools/cacert.pem` w `.gitignore`.
+- `AGENTS.md` tylko wskazuje na ten plik (jedna prawda) — nie duplikuj tu treści tam.

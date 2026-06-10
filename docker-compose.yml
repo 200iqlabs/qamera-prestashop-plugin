@@ -1,0 +1,106 @@
+# Środowisko testowe Qamera AI for PrestaShop.
+#
+# Dwa profile — uruchamiasz wybrany:
+#   docker compose --profile ps8 up -d     # PrestaShop 8.x  -> http://localhost:8082
+#   docker compose --profile ps9 up -d     # PrestaShop 9.x  -> http://localhost:8091
+#
+# Admin (oba):  http://localhost:<port>/admin-dev
+#   login: admin@qamera.test   hasło: qameraadmin1
+#
+# Moduł montowany na żywo z ./qameraai -> instalujesz w panelu:
+#   Moduły -> Menedżer modułów -> wyszukaj "Qamera" -> Zainstaluj -> Konfiguruj.
+# Zmiany w kodzie modułu widać po odświeżeniu (czasem trzeba wyczyścić cache PS).
+#
+# Reset całego środowiska (skasuje bazę + pliki sklepu):
+#   docker compose --profile ps8 down -v   (analogicznie ps9)
+
+services:
+  # ---- PrestaShop 8.x -------------------------------------------------------
+  db8:
+    image: mariadb:10.11
+    profiles: ["ps8"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: prestashop
+    volumes:
+      - db8-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ps8:
+    image: prestashop/prestashop:8
+    profiles: ["ps8"]
+    depends_on:
+      db8:
+        condition: service_healthy
+    ports:
+      - "8082:80"
+    environment:
+      DB_SERVER: db8
+      DB_NAME: prestashop
+      DB_USER: root
+      DB_PASSWD: root
+      PS_INSTALL_AUTO: 1
+      PS_ERASE_DB: 0
+      PS_DEV_MODE: 1
+      PS_DOMAIN: localhost:8082
+      PS_FOLDER_ADMIN: admin-dev
+      PS_FOLDER_INSTALL: install-dev
+      PS_LANGUAGE: pl
+      PS_COUNTRY: pl
+      ADMIN_MAIL: admin@qamera.test
+      ADMIN_PASSWD: qameraadmin1
+    volumes:
+      - ps8-data:/var/www/html
+      - ./qameraai:/var/www/html/modules/qameraai
+
+  # ---- PrestaShop 9.x -------------------------------------------------------
+  db9:
+    image: mariadb:11.4
+    profiles: ["ps9"]
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: prestashop
+    volumes:
+      - db9-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ps9:
+    image: prestashop/prestashop:9
+    profiles: ["ps9"]
+    depends_on:
+      db9:
+        condition: service_healthy
+    ports:
+      - "8091:80"
+    environment:
+      DB_SERVER: db9
+      DB_NAME: prestashop
+      DB_USER: root
+      DB_PASSWD: root
+      PS_INSTALL_AUTO: 1
+      PS_ERASE_DB: 0
+      PS_DEV_MODE: 1
+      PS_DOMAIN: localhost:8091
+      PS_FOLDER_ADMIN: admin-dev
+      PS_FOLDER_INSTALL: install-dev
+      PS_LANGUAGE: pl
+      PS_COUNTRY: pl
+      ADMIN_MAIL: admin@qamera.test
+      ADMIN_PASSWD: qameraadmin1
+    volumes:
+      - ps9-data:/var/www/html
+      - ./qameraai:/var/www/html/modules/qameraai
+
+volumes:
+  db8-data:
+  ps8-data:
+  db9-data:
+  ps9-data:
