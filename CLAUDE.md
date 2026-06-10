@@ -70,3 +70,11 @@ pełna duplikacja stanu lokalnie (model Heavy).
 - Mutacje do API: `Idempotency-Key`. Błędy API w kopercie `{ error: { code, message_i18n } }`.
 - Pracuj milestone'ami z `goals.md` (M1→M5); nie ruszaj następnego zanim DoD poprzedniego nie przejdzie.
 - Dopisuj 1 linię decyzji na sesję do `goals.md` (log = pamięć projektu).
+
+### Git
+- **Commituj bezpośrednio na `main`. NIE twórz branchy** (nadpisuje domyślne zachowanie agenta). Bez PR-flow.
+
+### Klucz API i sekrety
+- Runtime: klucz API żyje w `ps_configuration` (ekran ustawień modułu), NIE w `.env`.
+- `.env.example` = szablon dla dev/smoke-test; kopiujesz do `.env` (w `.gitignore`).
+- **NIGDY nie commituj `.env` ani klucza `mk_live_...`** do repo.
