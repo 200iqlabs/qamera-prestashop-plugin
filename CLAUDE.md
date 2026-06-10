@@ -1,4 +1,4 @@
-# Reguły projektu — {NAZWA PROJEKTU}
+# Reguły projektu — Qamera AI for PrestaShop
 
 > Ten plik czyta agent przy KAŻDEJ sesji. Dwie warstwy:
 > 1. **Struktura repo** (poniżej — zostaw, opisuje gdzie co leży)
@@ -23,8 +23,50 @@ Gdy budujesz UI — czytaj `context/brand.md` i stosuj wartości stamtąd. Gdy d
 
 ---
 
-<!-- KONSTYTUCJA PROJEKTU — wygeneruj komendą /reguly i wklej poniżej tę linię -->
-
 ## Konstytucja projektu
 
-_(pusto — uruchom `/reguly`, output trafia tutaj: stack lock, brand, twarde granice zakresu, protokół decyzji)_
+### Czym jest ten projekt
+Moduł PrestaShop „Qamera AI for PrestaShop" — cienki wrapper na API Qamera AI. Merchant z karty produktu
+generuje packshoty i sesje produktowe Qamera AI i publikuje zatwierdzone wyniki w galerii produktu, bez
+opuszczania panelu. Źródłem prawdy o stanie generacji (role, status, akceptacja, lineage) jest API Qamery,
+NIE baza wtyczki. Portujemy proces z istniejącej wtyczki WooCommerce (`C:\Projects\qamera-woocommerce`),
+NIE jej architekturę (WooCommerce duplikuje stan w post_meta — my nie).
+
+### Stack (zalockowany — nie zmieniaj)
+- PrestaShop **8.x (PHP 7.4+) ORAZ 9.x (PHP 8.1+)** — jeden moduł, kompatybilność wsteczna. PHP zgodny z 7.4.
+- Slug modułu: `qameraai`. Widoki: Smarty (`.tpl`). HTTP: cURL, nagłówek `X-Api-Key`, baza `/api/v1/plugin/*`.
+- Async: **brak** — upload+submit synchronicznie w AJAX; wynik przez **polling** `GET /jobs/{id}`. Bez crona, bez kolejki, bez webhooka (MVP).
+- Stan lokalny: **Thin-B** — Configuration + 2 tabele tylko z ID (`ps_qamera_order`, `ps_qamera_import`). Reszta z API.
+- UI: zakładka `displayAdminProductsExtra`, settings w `getContent()`.
+- **Nie proponuj zmiany stacku ani dodatkowych bibliotek bez pytania.**
+
+### Brand (stosuj w KAŻDYM ekranie — pełny: `context/brand.md`)
+- Kolory: grafit `#252b30` (nagłówki), **akcent teal `#83babc`** (przyciski primary, aktywna zakładka, plakietki ról), biały `#ffffff`. UI light: bg `#ffffff`, tekst `#1a1a1a`, border `#f3f4f6`, input `#e5e7eb`.
+- Font: **Inter** (400/500/600/700). Tokeny: button 6px/36px, CTA 12px/48px, card 16px, input 8px.
+- Zasady UI: zdjęcia produktów = bohater ekranu (pełna rozdzielczość + podgląd); workflow „wybierz i zatwierdź" bez żargonu AI; ton bezpośredni i konkretny.
+- Zakazane: fioletowe gradienty / generic AI-slop; zwroty „game changer", „rewolucja" (bez danych).
+- **Każdy nowy ekran/komponent używa tych wartości. Nie wymyślaj własnych kolorów ani fontów.**
+
+### Zakres — twarde granice
+Core Flow (§3 PRD): ze zdjęcia produktu → packshot → sesja → publikacja zatwierdzonych w galerii produktu,
+w całości z karty produktu PrestaShop. Reguła twarda: **sesja zawsze z packshota, nigdy wprost ze zdjęcia.**
+
+POZA zakresem (§6 PRD): webhook (HMAC/publiczny endpoint), własna kolejka/cron, bulk-generacja wielu produktów,
+warianty produktu (combinations), multistore, pełne i18n (tylko PL+EN), edycja/regeneracja/klonowanie wyników,
+pełna duplikacja stanu lokalnie (model Heavy).
+
+**Nie dodawaj funkcji spoza Core Flow, nawet jeśli wydają się przydatne. Jeśli czegoś brakuje — zapytaj, nie buduj.**
+
+### Protokół decyzji
+- **ZATRZYMAJ SIĘ i zapytaj** przy tematach z §7 PRD: prefiks `external_ref` przy multistore; obsługa
+  `analysis_status='described'` przed sesją; czy dopuszczać bezpośredni packshot z galerii; limit pollingu
+  (default 3s/5min); środowisko dev (prod `https://qamera.ai` vs local override `QAMERA_API_BASE`).
+- Decyzje techniczne w ramach stacka (struktura kodu, algorytmy, kolejność kroków w milestonie): podejmuj sam.
+- Treści i copy: używaj języka z `prd.md` / `context/brand.md` (zwalidowany). Nie generuj własnego marketingu.
+
+### Konwencje
+- Język UI: **polski** (primary) + **angielski** (fallback) przez system tłumaczeń PrestaShop.
+- Każdy widok z danymi: obsłuż **stan pusty** i **stan błędu** (błąd API = czytelny komunikat, nie biały ekran).
+- Mutacje do API: `Idempotency-Key`. Błędy API w kopercie `{ error: { code, message_i18n } }`.
+- Pracuj milestone'ami z `goals.md` (M1→M5); nie ruszaj następnego zanim DoD poprzedniego nie przejdzie.
+- Dopisuj 1 linię decyzji na sesję do `goals.md` (log = pamięć projektu).
