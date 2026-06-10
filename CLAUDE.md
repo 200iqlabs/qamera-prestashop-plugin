@@ -40,6 +40,14 @@ NIE jej architekturę (WooCommerce duplikuje stan w post_meta — my nie).
 - UI: zakładka `displayAdminProductsExtra`, settings w `getContent()`.
 - **Nie proponuj zmiany stacku ani dodatkowych bibliotek bez pytania.**
 
+### Dokumentacja API Qamera (kontrakt — źródło prawdy endpointów)
+- OpenAPI 3.1 (YAML): https://qamera.ai/openapi/plugin-v1.yaml
+- Interaktywna (Redoc): https://redocly.github.io/redoc/?url=https://qamera.ai/openapi/plugin-v1.yaml
+- Lokalne źródło (najszybsze, czytaj stąd): `C:\Projects\saas-platform\apps\web\public\openapi\plugin-v1.yaml`
+- Strona docs: `C:\Projects\saas-platform\apps\web\content\documentation\plugin-api\plugin-api.mdoc`
+- Referencja implementacji (port): wtyczka WooCommerce `C:\Projects\qamera-woocommerce`.
+- **Przy pracy z endpointami sprawdzaj kontrakt w OpenAPI, nie zgaduj kształtu payloadu/odpowiedzi.**
+
 ### Brand (stosuj w KAŻDYM ekranie — pełny: `context/brand.md`)
 - Kolory: grafit `#252b30` (nagłówki), **akcent teal `#83babc`** (przyciski primary, aktywna zakładka, plakietki ról), biały `#ffffff`. UI light: bg `#ffffff`, tekst `#1a1a1a`, border `#f3f4f6`, input `#e5e7eb`.
 - Font: **Inter** (400/500/600/700). Tokeny: button 6px/36px, CTA 12px/48px, card 16px, input 8px.
