@@ -150,3 +150,48 @@
 .qamera-badge--rejected { background: #fdecea; color: #842029; }
 
 .qamera-meta { display: block; font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+/* ── Generate status line (Flow A) ───────────────────────────── */
+.qamera-status {
+    margin: 12px 0 0;
+    font-size: 13px;
+    min-height: 18px;
+}
+.qamera-status:empty { margin: 0; min-height: 0; }
+.qamera-status--busy { color: #2a6e70; }
+.qamera-status--busy::before {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+    border: 2px solid #83babc;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: qamera-spin .7s linear infinite;
+}
+.qamera-status--success { color: #2a6e70; font-weight: 600; }
+.qamera-status--error { color: #842029; font-weight: 600; }
+
+@keyframes qamera-spin { to { transform: rotate(360deg); } }
+
+/* ── Fresh packshot container (rendered without page reload) ──── */
+.qamera-container--fresh { border-color: #83babc; }
+
+/* ── Accept / reject actions on a packshot card ──────────────── */
+.qamera-packshot__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.qamera-packshot__actions .qamera-btn {
+    width: auto;
+    flex: 1;
+    height: 36px;
+    font-size: 13px;
+}
+.qamera-btn--accept { background: #83babc; color: #ffffff; }
+.qamera-btn--accept:hover { background: #6fa9ab; }
+.qamera-btn--reject { background: #ffffff; color: #842029; border: 1px solid #f5c6cb; }
+.qamera-btn--reject:hover { background: #fdecea; }

@@ -86,7 +86,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * @param QameraApiException $e
      * @return void
      */
-    private function jsonError(QameraApiException $e)
+    private function apiError(QameraApiException $e)
     {
         $this->json([
             'ok' => false,
@@ -155,7 +155,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         try {
             $assetId = $this->ensureSourceAsset($client, $externalRef, $idProduct, $tmpPath, $fileName, $contentType, $sha);
         } catch (QameraApiException $e) {
-            $this->jsonError($e);
+            $this->apiError($e);
         }
 
         // Wait for the source image analysis to reach 'described' — otherwise
@@ -193,7 +193,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         try {
             $res = $client->submit_job($sessionConfig, [$subject], 'packshot', $idem);
         } catch (QameraApiException $e) {
-            $this->jsonError($e);
+            $this->apiError($e);
         }
 
         $jobId = $this->firstJobId($res);
@@ -413,7 +413,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         try {
             $job = $client->get_job($jobId);
         } catch (QameraApiException $e) {
-            $this->jsonError($e);
+            $this->apiError($e);
         }
 
         $this->json([
@@ -471,7 +471,7 @@ class AdminQameraAjaxController extends ModuleAdminController
                 $client->reject_job($jobId);
             }
         } catch (QameraApiException $e) {
-            $this->jsonError($e);
+            $this->apiError($e);
         }
 
         $this->json(['ok' => true, 'job_id' => $jobId, 'voting' => $vote === 'accept' ? 'accepted' : 'rejected']);

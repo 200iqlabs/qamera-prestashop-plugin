@@ -67,6 +67,12 @@
         return n;
     }
 
+    // Source-image analysis can outlast a single sync request. Retry the
+    // submit a few times — the server dedups by sha256, so a retry re-checks
+    // analysis and submits without re-uploading.
+    var SUBMIT_RETRY_MAX = 12;
+    var SUBMIT_RETRY_DELAY_MS = 5000;
+
     function bindGeneratePackshot(root, ctx) {
         var btn = root.querySelector('#qamera-generate-packshot');
         if (!btn) {
@@ -91,20 +97,36 @@
             fd.append('file', fileInput.files[0]);
 
             btn.disabled = true;
-            setStatus(root, 'Wysyłanie zdjęcia i zlecanie generacji…', 'busy');
+            submitGenerate(root, ctx, btn, fd, 0);
+        });
+    }
 
-            postForm(actionUrl(ctx, 'generatePackshot'), fd).then(function (res) {
-                if (!res || !res.ok) {
-                    setStatus(root, (res && res.error) ? res.error : 'Nie udało się rozpocząć generacji.', 'error');
-                    btn.disabled = false;
-                    return;
-                }
-                setStatus(root, 'Generowanie packshotu… (to może potrwać do kilku minut)', 'busy');
-                pollJob(root, ctx, res.job_id, btn);
-            }).catch(function () {
-                setStatus(root, 'Błąd sieci podczas wysyłki. Spróbuj ponownie.', 'error');
+    function submitGenerate(root, ctx, btn, fd, attempt) {
+        setStatus(
+            root,
+            attempt === 0
+                ? 'Wysyłanie zdjęcia i zlecanie generacji…'
+                : 'Analiza zdjęcia źródłowego… (próba ' + (attempt + 1) + ')',
+            'busy'
+        );
+
+        postForm(actionUrl(ctx, 'generatePackshot'), fd).then(function (res) {
+            if (res && !res.ok && res.code === 'analysis_pending' && attempt < SUBMIT_RETRY_MAX) {
+                setTimeout(function () {
+                    submitGenerate(root, ctx, btn, fd, attempt + 1);
+                }, SUBMIT_RETRY_DELAY_MS);
+                return;
+            }
+            if (!res || !res.ok) {
+                setStatus(root, (res && res.error) ? res.error : 'Nie udało się rozpocząć generacji.', 'error');
                 btn.disabled = false;
-            });
+                return;
+            }
+            setStatus(root, 'Generowanie packshotu… (to może potrwać do kilku minut)', 'busy');
+            pollJob(root, ctx, res.job_id, btn);
+        }).catch(function () {
+            setStatus(root, 'Błąd sieci podczas wysyłki. Spróbuj ponownie.', 'error');
+            btn.disabled = false;
         });
     }
 
