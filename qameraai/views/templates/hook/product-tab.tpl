@@ -8,10 +8,16 @@
  * (ProductPackshot.voting + job voting + source_image_id/packshot_asset_id) and
  * passed in here. This template only renders it. Brand: teal accent #83babc.
  *}
+{* Assets inlined here: the PS8/9 product page is a Symfony route, so
+   actionAdminControllerSetMedia does not fire — the hook output is the reliable
+   place to load the tab's CSS/JS. The JS guards against double-init. *}
+<link rel="stylesheet" href="{$qamera_css_url|escape:'htmlall':'UTF-8'}">
+<script src="{$qamera_js_url|escape:'htmlall':'UTF-8'}" defer></script>
 <div class="qamera-tab" id="qamera-product-tab"
      data-id-product="{$qamera_id_product|intval}"
      data-external-ref="{$qamera_external_ref|escape:'htmlall':'UTF-8'}"
-     data-default-preset="{$qamera_default_preset_id|escape:'htmlall':'UTF-8'}">
+     data-default-preset="{$qamera_default_preset_id|escape:'htmlall':'UTF-8'}"
+     data-ajax-url="{$qamera_ajax_url|escape:'htmlall':'UTF-8'}">
 
     <h3 class="qamera-tab__title">{l s='Qamera AI' mod='qameraai'}</h3>
 
@@ -45,6 +51,7 @@
                     <button type="button" class="qamera-btn qamera-btn--primary" id="qamera-generate-packshot">
                         {l s='Generuj packshot' mod='qameraai'}
                     </button>
+                    <p class="qamera-status" id="qamera-generate-status" role="status" aria-live="polite"></p>
                 </section>
 
                 <section class="qamera-card">
@@ -110,6 +117,14 @@
 
             {* ── RIGHT: photo -> packshots -> sessions ─────────────────────── *}
             <main class="qamera-col qamera-col--right">
+
+                {* Freshly generated packshots land here without a page reload. *}
+                <section class="qamera-container qamera-container--fresh" id="qamera-new-packshots" hidden>
+                    <div class="qamera-container__photo">
+                        <span class="qamera-badge qamera-badge--role">{l s='Nowy packshot' mod='qameraai'}</span>
+                    </div>
+                    <div class="qamera-container__packshots" id="qamera-new-packshots-list"></div>
+                </section>
 
                 {if $qamera_state_error}
                     <p class="qamera-alert qamera-alert--error">{$qamera_state_error|escape:'htmlall':'UTF-8'}</p>

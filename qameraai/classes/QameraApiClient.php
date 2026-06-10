@@ -140,6 +140,122 @@ class QameraApiClient
     }
 
     /**
+     * Upload a raw file as an asset (multipart/form-data).
+     * POST /api/v1/plugin/assets/upload
+     *
+     * Direct multipart mode: the bytes are sent in the request and the
+     * response carries the registered asset_id (no follow-up PUT needed).
+     *
+     * @param string $filePath    Absolute path to the local file to upload.
+     * @param string $fileName    Original file name (defaults to basename).
+     * @param string $contentType MIME type (e.g. image/jpeg). '' lets cURL guess.
+     * @return array Decoded JSON body (AssetUploadResponse) on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function upload_asset($filePath, $fileName = '', $contentType = '')
+    {
+        $name = ($fileName !== '') ? $fileName : basename((string) $filePath);
+
+        return $this->requestMultipart('/assets/upload', (string) $filePath, $name, (string) $contentType);
+    }
+
+    /**
+     * Register a generation-ready packshot in the product catalog.
+     * POST /api/v1/plugin/packshots
+     *
+     * Idempotent per (installation, external_ref). When $sourceImageRef is
+     * empty the service auto-creates a backing product_images row and queues
+     * it for analysis; identical content is deduplicated by SHA-256.
+     *
+     * @param string $externalRef     Stable packshot identifier (unique per installation).
+     * @param string $productRef       Parent product external_ref.
+     * @param string $assetId          asset_id from upload_asset().
+     * @param string $sourceImageRef   Optional source image external_ref this packshot derives from.
+     * @param array  $productMetadata  Optional metadata to cascade-create the product (display_name, sku...).
+     * @param string $idempotencyKey   Optional Idempotency-Key.
+     * @return array Decoded JSON body (RegisterPackshotsResponse) on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function register_packshot($externalRef, $productRef, $assetId, $sourceImageRef = '', array $productMetadata = [], $idempotencyKey = '')
+    {
+        $item = [
+            'external_ref' => (string) $externalRef,
+            'product_ref' => (string) $productRef,
+            'asset_id' => (string) $assetId,
+        ];
+        if ((string) $sourceImageRef !== '') {
+            $item['source_image_ref'] = (string) $sourceImageRef;
+        }
+        if (!empty($productMetadata)) {
+            $item['product_metadata'] = $productMetadata;
+        }
+
+        $headers = [];
+        if ((string) $idempotencyKey !== '') {
+            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
+        }
+
+        return $this->request('POST', '/packshots', ['packshots' => [$item]], $headers);
+    }
+
+    /**
+     * Submit a single generation session (one shared config, N subjects).
+     * POST /api/v1/plugin/jobs
+     *
+     * @param array  $sessionConfig  SessionConfig (preset_id, model_id, scenery_id, aspect_ratio, suggestions).
+     * @param array  $subjects        List of Subject objects (product_ref, product_label, images_count, ai_model, ...).
+     * @param string $jobType         photo_shoot | packshot | ... (default photo_shoot).
+     * @param string $idempotencyKey  Optional Idempotency-Key for safe retry.
+     * @return array Decoded JSON body (SubmitJobResponse) on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function submit_job(array $sessionConfig, array $subjects, $jobType = 'photo_shoot', $idempotencyKey = '')
+    {
+        $body = [
+            // Cast to object so an empty config still serializes as {} not [].
+            'session_config' => (object) $sessionConfig,
+            'subjects' => array_values($subjects),
+        ];
+        if ((string) $jobType !== '') {
+            $body['job_type'] = (string) $jobType;
+        }
+
+        $headers = [];
+        if ((string) $idempotencyKey !== '') {
+            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
+        }
+
+        return $this->request('POST', '/jobs', $body, $headers);
+    }
+
+    /**
+     * Record an accept vote on a completed job. For packshot jobs this also
+     * approves the generated packshot (unblocks photo sessions).
+     * POST /api/v1/plugin/jobs/{id}/accept (204 No Content).
+     *
+     * @param string $jobId
+     * @return array Empty array on success (no body).
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function accept_job($jobId)
+    {
+        return $this->request('POST', '/jobs/' . rawurlencode((string) $jobId) . '/accept');
+    }
+
+    /**
+     * Record a reject vote on a completed job.
+     * POST /api/v1/plugin/jobs/{id}/reject (204 No Content).
+     *
+     * @param string $jobId
+     * @return array Empty array on success (no body).
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function reject_job($jobId)
+    {
+        return $this->request('POST', '/jobs/' . rawurlencode((string) $jobId) . '/reject');
+    }
+
+    /**
      * Available mannequin/models for the account (account + marketplace).
      * GET /api/v1/plugin/models
      *
@@ -237,6 +353,99 @@ class QameraApiClient
         $decoded = json_decode((string) $raw, true);
 
         // API error envelope: { error: { code, message_i18n } }
+        if (is_array($decoded) && isset($decoded['error']) && is_array($decoded['error'])) {
+            $err = $decoded['error'];
+            $code = isset($err['code']) ? (string) $err['code'] : 'api_error';
+            $message = self::extractMessage($err, $status);
+            throw new QameraApiException($code, $message, $status);
+        }
+
+        if ($status < 200 || $status >= 300) {
+            throw new QameraApiException(
+                'http_' . $status,
+                self::defaultMessageForStatus($status),
+                $status
+            );
+        }
+
+        // 2xx with an empty body (e.g. 204 from accept/reject) is success.
+        if ($decoded === null && trim((string) $raw) === '') {
+            return [];
+        }
+
+        if (!is_array($decoded)) {
+            throw new QameraApiException(
+                'invalid_response',
+                'Nieprawidłowa odpowiedź z API Qamera AI.',
+                $status
+            );
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Perform a multipart/form-data upload (single "file" field).
+     *
+     * @param string $path        Path relative to API_PREFIX (leading slash).
+     * @param string $filePath    Absolute path to the file on disk.
+     * @param string $fileName    Original file name sent to the API.
+     * @param string $contentType MIME type ('' lets cURL decide).
+     *
+     * @return array Decoded JSON body.
+     * @throws QameraApiException
+     */
+    public function requestMultipart($path, $filePath, $fileName, $contentType = '')
+    {
+        if (!$this->hasKey()) {
+            throw new QameraApiException(
+                'missing_api_key',
+                'Brak klucza API. Wklej klucz Qamera AI w ustawieniach modułu.'
+            );
+        }
+
+        if (!is_file($filePath) || !is_readable($filePath)) {
+            throw new QameraApiException(
+                'invalid_input',
+                'Nie można odczytać pliku do wysłania.'
+            );
+        }
+
+        $url = $this->apiBase . self::API_PREFIX . $path;
+
+        $cfile = ($contentType !== '')
+            ? new CURLFile($filePath, $contentType, $fileName)
+            : new CURLFile($filePath, '', $fileName);
+
+        $headers = [
+            'X-Api-Key: ' . $this->apiKey,
+            'Accept: application/json',
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->timeout);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => $cfile]);
+
+        $raw = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $error = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($errno !== 0) {
+            throw new QameraApiException(
+                'transport_error',
+                'Nie można wysłać pliku do Qamera AI: ' . $error
+            );
+        }
+
+        $decoded = json_decode((string) $raw, true);
+
         if (is_array($decoded) && isset($decoded['error']) && is_array($decoded['error'])) {
             $err = $decoded['error'];
             $code = isset($err['code']) ? (string) $err['code'] : 'api_error';

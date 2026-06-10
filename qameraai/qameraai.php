@@ -58,6 +58,7 @@ class Qameraai extends Module
         return parent::install()
             && $this->installDb()
             && $this->installConfiguration()
+            && $this->installTab()
             && $this->registerHook('displayAdminProductsExtra')
             && $this->registerHook('actionAdminControllerSetMedia');
     }
@@ -69,9 +70,53 @@ class Qameraai extends Module
      */
     public function uninstall()
     {
-        return $this->uninstallConfiguration()
+        return $this->uninstallTab()
+            && $this->uninstallConfiguration()
             && $this->uninstallDb()
             && parent::uninstall();
+    }
+
+    /**
+     * Register a hidden admin tab for the AJAX controller so getAdminLink()
+     * produces a valid token. No menu entry (id_parent = -1).
+     *
+     * @return bool
+     */
+    private function installTab()
+    {
+        if (Tab::getIdFromClassName('AdminQameraAjax')) {
+            return true;
+        }
+
+        $tab = new Tab();
+        $tab->class_name = 'AdminQameraAjax';
+        $tab->module = $this->name;
+        $tab->active = 1;
+        // Hidden tab — not shown in the back-office menu.
+        $tab->id_parent = -1;
+        $tab->name = [];
+        foreach (Language::getLanguages(false) as $lang) {
+            $tab->name[(int) $lang['id_lang']] = 'Qamera AJAX';
+        }
+
+        return (bool) $tab->add();
+    }
+
+    /**
+     * Remove the AJAX controller tab.
+     *
+     * @return bool
+     */
+    private function uninstallTab()
+    {
+        $idTab = (int) Tab::getIdFromClassName('AdminQameraAjax');
+        if (!$idTab) {
+            return true;
+        }
+
+        $tab = new Tab($idTab);
+
+        return (bool) $tab->delete();
     }
 
     /**
@@ -425,6 +470,12 @@ class Qameraai extends Module
         $assign = [
             'qamera_id_product' => $idProduct,
             'qamera_external_ref' => $this->buildExternalRef($idProduct),
+            'qamera_ajax_url' => $this->context->link->getAdminLink('AdminQameraAjax'),
+            // Inlined in the hook template: the PS8/9 product page is a Symfony
+            // route (no controller= param), so actionAdminControllerSetMedia does
+            // not fire there — the hook output is the reliable injection point.
+            'qamera_css_url' => $this->_path . 'views/css/qamera-admin.css?v=' . $this->version,
+            'qamera_js_url' => $this->_path . 'views/js/qamera-product.js?v=' . $this->version,
             'qamera_has_key' => $client->hasKey(),
             'qamera_default_preset_id' => (string) Configuration::get(self::KEY_DEFAULT_PRESET_ID),
             'qamera_models' => [],
