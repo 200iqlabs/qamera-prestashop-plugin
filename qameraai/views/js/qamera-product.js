@@ -75,6 +75,13 @@
     /** Single delegated click handler for every tab action. */
     function bindActions(root, ctx) {
         root.addEventListener('click', function (e) {
+            // Click a preview thumbnail → open the full image in a lightbox.
+            if (e.target && e.target.tagName === 'IMG'
+                && e.target.closest
+                && e.target.closest('.qamera-output, .qamera-packshot, .qamera-container__photo')) {
+                openLightbox(e.target.getAttribute('src'));
+                return;
+            }
             var target = closestAction(e.target);
             if (!target) {
                 return;
@@ -820,6 +827,41 @@
         }
         badge.className = 'qamera-badge qamera-badge--' + (classes[voting] || 'pending');
         badge.textContent = labels[voting] || 'Oczekuje';
+    }
+
+    /* ── lightbox (full-image preview) ─────────────────────────────────── */
+
+    /** Open a full-size image preview overlay. Click / Esc closes it. */
+    function openLightbox(src) {
+        if (!src) {
+            return;
+        }
+        var box = document.getElementById('qamera-lightbox');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'qamera-lightbox';
+            box.className = 'qamera-lightbox';
+            var img = document.createElement('img');
+            img.className = 'qamera-lightbox__img';
+            img.alt = '';
+            box.appendChild(img);
+            box.addEventListener('click', closeLightbox);
+            document.body.appendChild(box);
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' || e.keyCode === 27) {
+                    closeLightbox();
+                }
+            });
+        }
+        box.querySelector('.qamera-lightbox__img').src = src;
+        box.classList.add('qamera-lightbox--open');
+    }
+
+    function closeLightbox() {
+        var box = document.getElementById('qamera-lightbox');
+        if (box) {
+            box.classList.remove('qamera-lightbox--open');
+        }
     }
 
     /* ── transport helpers ─────────────────────────────────────────────── */
