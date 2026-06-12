@@ -102,14 +102,16 @@
 /* ── Containers: photo -> packshots -> sessions ──────────────── */
 .qamera-container {
     display: flex;
-    gap: 16px;
+    flex-direction: column;
+    gap: 12px;
     border: 1px solid #f3f4f6;
     border-radius: 16px;
     padding: 16px;
     margin-bottom: 16px;
 }
-.qamera-container__photo { flex: 0 0 160px; max-width: 160px; }
-.qamera-container__packshots { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+/* Source photo on top, packshot tiles flow in full-width rows below. */
+.qamera-container__photo { width: 160px; max-width: 160px; }
+.qamera-container__packshots { display: flex; flex-wrap: wrap; gap: 12px; }
 
 .qamera-packshot,
 .qamera-output {
