@@ -146,7 +146,12 @@
 
 .qamera-sessions { width: 100%; margin-top: 8px; }
 .qamera-session { border-top: 1px solid #f3f4f6; padding-top: 8px; margin-top: 8px; }
-.qamera-session__outputs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.qamera-session__outputs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+/* Session images sit side by side (2 per row) inside the packshot tile,
+   not stacked. Their accept/reject stack so the labels stay readable. */
+.qamera-session__outputs .qamera-output { width: calc(50% - 3px); min-width: 0; padding: 4px; }
+.qamera-session__outputs .qamera-output__actions { flex-direction: column; }
+.qamera-session__outputs .qamera-output__actions .qamera-btn { flex: none; width: 100%; }
 
 /* ── Badges ──────────────────────────────────────────────────── */
 .qamera-badge {
