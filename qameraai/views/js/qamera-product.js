@@ -116,6 +116,11 @@
         if (!idImage) {
             return;
         }
+        // Grab the source thumbnail now — reused for the platform tile.
+        var galItem = root.querySelector('.qamera-gallery__item[data-id-image="' + idImage + '"]');
+        var galImg = galItem ? galItem.querySelector('img') : null;
+        var imgUrl = galImg ? galImg.getAttribute('src') : '';
+
         target.disabled = true;
         setStatus(root, asPackshot ? 'Dodawanie jako packshot…' : 'Dodawanie jako zdjęcie produktu…', 'busy');
 
@@ -127,9 +132,19 @@
                 return;
             }
             updateGalleryItem(root, idImage, asPackshot);
+            // Live injection: the image now lives in section 3 (platform). A
+            // source image gets a "Generuj packshot" button; a direct packshot
+            // shows 3a + 3b with no generation (no packshot-from-packshot).
+            injectPlatformTile(root, {
+                idImage: idImage,
+                imgUrl: imgUrl,
+                asPackshot: asPackshot,
+                assetId: res.asset_id || '',
+                ref: res.external_ref || ''
+            });
             setStatus(
                 root,
-                asPackshot ? 'Dodano jako packshot.' : 'Dodano jako zdjęcie produktu — można generować packshot.',
+                asPackshot ? 'Dodano jako packshot.' : 'Dodano jako zdjęcie produktu — możesz wygenerować packshot poniżej.',
                 'success'
             );
         }).catch(function () {
@@ -138,7 +153,7 @@
         });
     }
 
-    /** Reflect a fresh registration on the gallery tile (badges + buttons). */
+    /** Reflect a fresh registration on the gallery tile (badge, no actions). */
     function updateGalleryItem(root, idImage, asPackshot) {
         var item = root.querySelector('.qamera-gallery__item[data-id-image="' + idImage + '"]');
         if (!item) {
@@ -147,35 +162,124 @@
         var badges = item.querySelector('.qamera-gallery__badges');
         var actions = item.querySelector('.qamera-gallery__actions');
 
-        if (asPackshot) {
-            item.setAttribute('data-as-packshot', '1');
-            if (badges && !badges.querySelector('.qamera-badge--role')) {
-                var pb = document.createElement('span');
-                pb.className = 'qamera-badge qamera-badge--role';
-                pb.textContent = 'packshot';
-                badges.appendChild(pb);
+        item.setAttribute(asPackshot ? 'data-as-packshot' : 'data-as-image', '1');
+        if (badges) {
+            var cls = asPackshot ? 'qamera-badge--role' : 'qamera-badge--accepted';
+            if (!badges.querySelector('.' + cls)) {
+                var b = document.createElement('span');
+                b.className = 'qamera-badge ' + cls;
+                b.textContent = asPackshot ? 'packshot' : 'źródło';
+                badges.appendChild(b);
             }
-            if (actions) { actions.innerHTML = ''; }
+        }
+        // No generation here — that happens on the platform tile (section 3).
+        if (actions) { actions.innerHTML = ''; }
+    }
+
+    /** Find or create the section-3 (platform) container for a source image. */
+    function injectPlatformTile(root, o) {
+        var listWrap = root.querySelector('#qamera-platform-list');
+        if (!listWrap) {
             return;
         }
+        var empty = root.querySelector('#qamera-empty');
+        if (empty) { empty.hidden = true; }
 
-        item.setAttribute('data-as-image', '1');
-        if (badges && !badges.querySelector('.qamera-badge--accepted')) {
-            var sb = document.createElement('span');
-            sb.className = 'qamera-badge qamera-badge--accepted';
-            sb.textContent = 'źródło';
-            badges.appendChild(sb);
+        var container = listWrap.querySelector('.qamera-container[data-id-image="' + o.idImage + '"]');
+        if (!container) {
+            container = document.createElement('section');
+            container.className = 'qamera-container';
+            container.setAttribute('data-id-image', o.idImage);
+
+            var photo = document.createElement('div');
+            photo.className = 'qamera-container__photo';
+            var role = document.createElement('span');
+            role.className = 'qamera-badge qamera-badge--role';
+            role.textContent = 'Zdjęcie';
+            photo.appendChild(role);
+            if (o.imgUrl) {
+                var im = document.createElement('img');
+                im.src = o.imgUrl; im.alt = ''; im.loading = 'lazy';
+                photo.appendChild(im);
+            }
+            // A direct packshot's source must not be re-generated from.
+            if (!o.asPackshot) {
+                var gen = document.createElement('button');
+                gen.type = 'button';
+                gen.className = 'qamera-btn qamera-btn--primary';
+                gen.setAttribute('data-action', 'generate-packshot');
+                gen.setAttribute('data-id-image', o.idImage);
+                gen.textContent = 'Generuj packshot';
+                photo.appendChild(gen);
+            }
+            container.appendChild(photo);
+
+            var packs = document.createElement('div');
+            packs.className = 'qamera-container__packshots';
+            container.appendChild(packs);
+
+            listWrap.insertBefore(container, listWrap.firstChild);
         }
-        if (actions) {
-            actions.innerHTML = '';
-            var gen = document.createElement('button');
-            gen.type = 'button';
-            gen.className = 'qamera-btn qamera-btn--primary';
-            gen.setAttribute('data-action', 'generate-packshot');
-            gen.setAttribute('data-id-image', idImage);
-            gen.textContent = 'Generuj packshot';
-            actions.appendChild(gen);
+
+        if (o.asPackshot) {
+            var packsArea = container.querySelector('.qamera-container__packshots');
+            clearMuted(packsArea);
+            packsArea.appendChild(makeDirectPackshotTile(o.assetId, o.ref, o.imgUrl));
         }
+    }
+
+    /** Build an auto-accepted direct-packshot tile (3b): session + delete only. */
+    function makeDirectPackshotTile(assetId, ref, imgUrl) {
+        var fig = document.createElement('figure');
+        fig.className = 'qamera-packshot qamera-vote--accepted';
+        fig.setAttribute('data-asset-id', assetId || '');
+        fig.setAttribute('data-packshot-ref', ref || '');
+        fig.setAttribute('data-voting', 'accepted');
+
+        var role = document.createElement('span');
+        role.className = 'qamera-badge qamera-badge--role';
+        role.textContent = 'Packshot';
+        fig.appendChild(role);
+        var acc = document.createElement('span');
+        acc.className = 'qamera-badge qamera-badge--accepted';
+        acc.textContent = 'Zatwierdzony';
+        fig.appendChild(acc);
+
+        if (imgUrl) {
+            var im = document.createElement('img');
+            im.src = imgUrl; im.alt = ''; im.loading = 'lazy';
+            fig.appendChild(im);
+        } else {
+            var box = document.createElement('div');
+            box.className = 'qamera-thumb qamera-thumb--placeholder';
+            fig.appendChild(box);
+        }
+
+        var actions = document.createElement('div');
+        actions.className = 'qamera-packshot__actions';
+        var ses = document.createElement('button');
+        ses.type = 'button';
+        ses.className = 'qamera-btn qamera-btn--primary';
+        ses.setAttribute('data-action', 'generate-session');
+        ses.setAttribute('data-packshot-asset-id', assetId || '');
+        ses.textContent = 'Generuj sesję';
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'qamera-btn qamera-btn--delete';
+        del.setAttribute('data-action', 'delete-packshot');
+        del.setAttribute('data-packshot-ref', ref || '');
+        del.textContent = 'Usuń';
+        actions.appendChild(ses);
+        actions.appendChild(del);
+        fig.appendChild(actions);
+        return fig;
+    }
+
+    /** Drop a "Brak packshotów…" placeholder line from a packshots container. */
+    function clearMuted(area) {
+        if (!area) { return; }
+        var m = area.querySelector('.qamera-muted');
+        if (m && m.parentNode) { m.parentNode.removeChild(m); }
     }
 
     /** Generate a packshot from a registered source image (with placeholder). */
@@ -193,8 +297,11 @@
             id_image: idImage
         });
 
-        // Placeholder appears immediately, before the job even exists.
-        var ph = addPlaceholderTile(root);
+        // Placeholder appears immediately, inside this image's container (3b).
+        var container = target.closest ? target.closest('.qamera-container') : null;
+        var list = container ? container.querySelector('.qamera-container__packshots') : null;
+        clearMuted(list);
+        var ph = addPlaceholderTile(list);
         submitGenerate(root, ctx, target, fd, 0, ph);
     }
 
@@ -268,14 +375,11 @@
         });
     }
 
-    /** Insert an empty placeholder packshot tile and return it. */
-    function addPlaceholderTile(root) {
-        var wrap = root.querySelector('#qamera-new-packshots');
-        var list = root.querySelector('#qamera-new-packshots-list');
-        if (!wrap || !list) {
+    /** Insert an empty placeholder packshot tile into a container's list. */
+    function addPlaceholderTile(list) {
+        if (!list) {
             return null;
         }
-        wrap.hidden = false;
 
         var fig = document.createElement('figure');
         fig.className = 'qamera-packshot qamera-packshot--loading qamera-vote--pending';
@@ -601,6 +705,15 @@
         }
     }
 
+    /** Remove the accept/reject vote buttons from a card. */
+    function removeVoteButtons(fig) {
+        if (!fig) { return; }
+        var btns = fig.querySelectorAll('[data-vote="accept"], [data-vote="reject"]');
+        for (var i = 0; i < btns.length; i++) {
+            if (btns[i].parentNode) { btns[i].parentNode.removeChild(btns[i]); }
+        }
+    }
+
     function handleVote(root, ctx, target, vote) {
         var jobId = target.getAttribute('data-job-id');
         if (!jobId) {
@@ -650,7 +763,8 @@
                 fig.setAttribute('data-voting', res.voting);
                 if (vote === 'accept' && isPackshot) {
                     fig.classList.add('qamera-packshot--selectable');
-                    // An approved packshot can now seed a session.
+                    // Approved → drop accept/reject, reveal "Generuj sesję".
+                    removeVoteButtons(fig);
                     addSessionButton(fig);
                 }
                 setStateBadge(fig, res.voting);

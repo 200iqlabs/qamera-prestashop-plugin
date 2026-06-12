@@ -572,7 +572,7 @@ class Qameraai extends Module
             $assign['qamera_ai_models'] = $catalog['ai_models'];
             $assign['qamera_presets'] = $catalog['presets'];
             $assign['qamera_catalog_error'] = $catalog['error'];
-            $assign['qamera_gallery'] = $this->loadGalleryImages($idProduct, $view['registered']);
+            $assign['qamera_gallery'] = $this->loadGalleryImages($idProduct, $view['registered'], $this->importedImageIds($idProduct));
             $assign['qamera_containers'] = $view['containers'];
             $assign['qamera_standalone_packshots'] = $view['standalone'];
             $assign['qamera_is_empty'] = $view['is_empty'];
@@ -621,14 +621,17 @@ class Qameraai extends Module
      *
      * @param int   $idProduct
      * @param array $registered Map id_image => [as_image, as_packshot] from the API.
+     * @param array $excludeIds id_images to hide (our own session imports — they
+     *                          are published results, not source candidates).
      * @return array List of {id_image, url, cover, as_image, as_packshot}.
      */
-    private function loadGalleryImages($idProduct, array $registered)
+    private function loadGalleryImages($idProduct, array $registered, array $excludeIds = [])
     {
         $idProduct = (int) $idProduct;
         if ($idProduct <= 0) {
             return [];
         }
+        $exclude = array_flip(array_map('intval', $excludeIds));
 
         $idLang = (int) $this->context->language->id;
 
@@ -653,6 +656,11 @@ class Qameraai extends Module
             if ($idImage <= 0) {
                 continue;
             }
+            // Skip images we imported from a session — those are published
+            // outputs, never re-offered as a generation source.
+            if (isset($exclude[$idImage])) {
+                continue;
+            }
             $url = '';
             try {
                 $url = $this->context->link->getImageLink($rewrite, $idProduct . '-' . $idImage, 'home_default');
@@ -670,6 +678,32 @@ class Qameraai extends Module
         }
 
         return $out;
+    }
+
+    /**
+     * id_images this module imported into the gallery from accepted sessions
+     * (ps_qamera_import). They are published outputs — excluded from the source
+     * picker so a generated image is never offered as a generation source.
+     *
+     * @param int $idProduct
+     * @return array List of int id_image.
+     */
+    private function importedImageIds($idProduct)
+    {
+        $rows = Db::getInstance()->executeS(
+            'SELECT id_image FROM `' . _DB_PREFIX_ . 'qamera_import` WHERE id_product = ' . (int) $idProduct
+        );
+        if (!is_array($rows)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($rows as $r) {
+            if (isset($r['id_image'])) {
+                $ids[] = (int) $r['id_image'];
+            }
+        }
+
+        return $ids;
     }
 
     /**
@@ -859,6 +893,9 @@ class Qameraai extends Module
             $containers[] = [
                 'photo' => [
                     'id' => $imgId,
+                    // PrestaShop id_image parsed from external_ref — drives the
+                    // "Generuj packshot" button on the platform source tile (3a).
+                    'id_image' => $this->parseImageIdFromRef(isset($img['external_ref']) ? (string) $img['external_ref'] : ''),
                     'url' => $localUrl,
                     'thumb' => $localUrl,
                     'asset_id' => isset($img['asset_id']) ? (string) $img['asset_id'] : '',
@@ -915,6 +952,9 @@ class Qameraai extends Module
         return [
             'id' => isset($pk['id']) ? (string) $pk['id'] : $assetId,
             'asset_id' => $assetId,
+            // Generating job id — lets a pending packshot be accepted/rejected
+            // on a server render (accept_job approves the packshot).
+            'job_id' => $genJobId,
             'url' => $url,
             'thumb' => $url,
             'voting' => $state,

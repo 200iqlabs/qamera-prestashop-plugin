@@ -24,18 +24,25 @@
         <div class="qamera-thumb qamera-thumb--placeholder"></div>
     {/if}
 
-    {* A session is always generated from a packshot (§3 hard rule). Only an
-       approved packshot (accepted, or a direct packshot — auto-accepted) can
-       seed one. *}
-    {if $packshot.approved}
-        <button type="button" class="qamera-btn qamera-btn--primary"
-                data-action="generate-session"
-                data-packshot-asset-id="{$packshot.asset_id|escape:'htmlall':'UTF-8'}">
-            {l s='Generuj sesję' mod='qameraai'}
-        </button>
-    {/if}
-
     <div class="qamera-packshot__actions">
+        {* Approved (accepted / direct) packshot → can seed a session (§3 rule).
+           Pending packshot → accept/reject (accepting approves the packshot). *}
+        {if $packshot.approved}
+            <button type="button" class="qamera-btn qamera-btn--primary"
+                    data-action="generate-session"
+                    data-packshot-asset-id="{$packshot.asset_id|escape:'htmlall':'UTF-8'}">
+                {l s='Generuj sesję' mod='qameraai'}
+            </button>
+        {elseif !$packshot.rejected && $packshot.job_id}
+            <button type="button" class="qamera-btn qamera-btn--accept"
+                    data-vote="accept" data-job-id="{$packshot.job_id|escape:'htmlall':'UTF-8'}">
+                {l s='Zatwierdź' mod='qameraai'}
+            </button>
+            <button type="button" class="qamera-btn qamera-btn--reject"
+                    data-vote="reject" data-job-id="{$packshot.job_id|escape:'htmlall':'UTF-8'}">
+                {l s='Odrzuć' mod='qameraai'}
+            </button>
+        {/if}
         <button type="button" class="qamera-btn qamera-btn--delete"
                 data-action="delete-packshot"
                 data-packshot-ref="{$packshot.id|escape:'htmlall':'UTF-8'}">
