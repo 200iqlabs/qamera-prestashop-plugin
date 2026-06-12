@@ -243,23 +243,25 @@
         fig.setAttribute('data-packshot-ref', ref || '');
         fig.setAttribute('data-voting', 'accepted');
 
+        var main = packshotMain(fig);
+
         var role = document.createElement('span');
         role.className = 'qamera-badge qamera-badge--role';
         role.textContent = 'Packshot';
-        fig.appendChild(role);
+        main.appendChild(role);
         var acc = document.createElement('span');
         acc.className = 'qamera-badge qamera-badge--accepted';
         acc.textContent = 'Zatwierdzony';
-        fig.appendChild(acc);
+        main.appendChild(acc);
 
         if (imgUrl) {
             var im = document.createElement('img');
             im.src = imgUrl; im.alt = ''; im.loading = 'lazy';
-            fig.appendChild(im);
+            main.appendChild(im);
         } else {
             var box = document.createElement('div');
             box.className = 'qamera-thumb qamera-thumb--placeholder';
-            fig.appendChild(box);
+            main.appendChild(box);
         }
 
         var actions = document.createElement('div');
@@ -278,8 +280,20 @@
         del.textContent = 'Usuń';
         actions.appendChild(ses);
         actions.appendChild(del);
-        fig.appendChild(actions);
+        main.appendChild(actions);
         return fig;
+    }
+
+    /** Create (or return) the left "main" block of a packshot card — holds the
+        badges, image and action buttons; sessions sit beside it. */
+    function packshotMain(fig) {
+        var main = fig.querySelector('.qamera-packshot__main');
+        if (!main) {
+            main = document.createElement('div');
+            main.className = 'qamera-packshot__main';
+            fig.appendChild(main);
+        }
+        return main;
     }
 
     /** Drop a "Brak packshotów…" placeholder line from a packshots container. */
@@ -390,15 +404,16 @@
 
         var fig = document.createElement('figure');
         fig.className = 'qamera-packshot qamera-packshot--loading qamera-vote--pending';
+        var main = packshotMain(fig);
 
         var roleBadge = document.createElement('span');
         roleBadge.className = 'qamera-badge qamera-badge--role';
         roleBadge.textContent = 'Packshot';
-        fig.appendChild(roleBadge);
+        main.appendChild(roleBadge);
 
         var box = document.createElement('div');
         box.className = 'qamera-thumb qamera-thumb--placeholder qamera-thumb--loading';
-        fig.appendChild(box);
+        main.appendChild(box);
 
         list.appendChild(fig);
         return fig;
@@ -421,22 +436,23 @@
         while (ph.firstChild) {
             ph.removeChild(ph.firstChild);
         }
+        var main = packshotMain(ph);
 
         var roleBadge = document.createElement('span');
         roleBadge.className = 'qamera-badge qamera-badge--role';
         roleBadge.textContent = 'Packshot';
-        ph.appendChild(roleBadge);
+        main.appendChild(roleBadge);
 
         if (job.url) {
             var img = document.createElement('img');
             img.src = job.url;
             img.alt = '';
             img.loading = 'lazy';
-            ph.appendChild(img);
+            main.appendChild(img);
         } else {
             var box = document.createElement('div');
             box.className = 'qamera-thumb qamera-thumb--placeholder';
-            ph.appendChild(box);
+            main.appendChild(box);
         }
 
         var actions = document.createElement('div');
@@ -470,7 +486,7 @@
             actions.appendChild(delBtn);
         }
 
-        ph.appendChild(actions);
+        main.appendChild(actions);
     }
 
     /* ── Flow B: packshot -> session -> publish ────────────────────────── */

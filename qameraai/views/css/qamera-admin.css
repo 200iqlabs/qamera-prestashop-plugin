@@ -109,11 +109,10 @@
     padding: 16px;
     margin-bottom: 16px;
 }
-/* Source photo on top, packshot tiles flow in full-width rows below. */
+/* Source photo on top; each packshot is its own row below. */
 .qamera-container__photo { width: 160px; max-width: 160px; }
-.qamera-container__packshots { display: flex; flex-wrap: wrap; gap: 12px; }
+.qamera-container__packshots { display: flex; flex-direction: column; gap: 12px; }
 
-.qamera-packshot,
 .qamera-output {
     position: relative;
     margin: 0;
@@ -122,10 +121,31 @@
     padding: 8px;
     width: 160px;
 }
-/* Packshot tile is wider so its stacked action buttons read comfortably. */
-.qamera-packshot { width: 200px; }
+/* A packshot row: its preview/actions block on the left, the session images
+   it produced laid out in a row to the right. */
+.qamera-packshot {
+    position: relative;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    border: 2px solid #f3f4f6;
+    border-radius: 12px;
+    padding: 8px;
+}
+.qamera-packshot__main { flex: 0 0 200px; width: 200px; }
 /* "Generuj packshot" sits under the source photo in the platform tile. */
 .qamera-container__photo .qamera-btn { margin-top: 8px; height: 36px; font-size: 13px; }
+.qamera-packshot__main img,
+.qamera-output img,
+.qamera-container__photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: zoom-in;
+}
 .qamera-packshot img,
 .qamera-output img,
 .qamera-container__photo img {
@@ -167,14 +187,12 @@
 .qamera-vote--rejected { border-color: #f5c6cb; opacity: .6; }
 .qamera-vote--pending { border-color: #e5e7eb; }
 
-.qamera-sessions { width: 100%; margin-top: 8px; }
+/* Sessions occupy the rest of the packshot row, to the right of its main
+   block; the generated images flow in a wrapping row. */
+.qamera-sessions { flex: 1 1 auto; min-width: 0; margin-top: 0; }
 .qamera-session { border-top: 1px solid #f3f4f6; padding-top: 8px; margin-top: 8px; }
-.qamera-session__outputs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-/* Session images sit side by side (2 per row) inside the packshot tile,
-   not stacked. Their accept/reject stack so the labels stay readable. */
-.qamera-session__outputs .qamera-output { width: calc(50% - 3px); min-width: 0; padding: 4px; }
-.qamera-session__outputs .qamera-output__actions { flex-direction: column; }
-.qamera-session__outputs .qamera-output__actions .qamera-btn { flex: none; width: 100%; }
+.qamera-session__outputs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.qamera-session__outputs .qamera-output { width: 140px; }
 
 /* ── Badges ──────────────────────────────────────────────────── */
 .qamera-badge {
