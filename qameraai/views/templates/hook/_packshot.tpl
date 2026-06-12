@@ -24,6 +24,25 @@
         <div class="qamera-thumb qamera-thumb--placeholder"></div>
     {/if}
 
+    {* A session is always generated from a packshot (§3 hard rule). Only an
+       approved packshot (accepted, or a direct packshot — auto-accepted) can
+       seed one. *}
+    {if $packshot.approved}
+        <button type="button" class="qamera-btn qamera-btn--primary"
+                data-action="generate-session"
+                data-packshot-asset-id="{$packshot.asset_id|escape:'htmlall':'UTF-8'}">
+            {l s='Generuj sesję' mod='qameraai'}
+        </button>
+    {/if}
+
+    <div class="qamera-packshot__actions">
+        <button type="button" class="qamera-btn qamera-btn--delete"
+                data-action="delete-packshot"
+                data-packshot-ref="{$packshot.id|escape:'htmlall':'UTF-8'}">
+            {l s='Usuń' mod='qameraai'}
+        </button>
+    </div>
+
     {* Session results from this packshot (one job = one image, job-level voting). *}
     {if $packshot.sessions|@count > 0}
         <div class="qamera-sessions">
@@ -46,6 +65,22 @@
                             <span class="qamera-badge qamera-badge--rejected">{l s='Odrzucony' mod='qameraai'}</span>
                         {else}
                             <span class="qamera-meta">{$session.status|escape:'htmlall':'UTF-8'}</span>
+                        {/if}
+
+                        {* Approve → published to the product gallery; reject → discarded. *}
+                        {if $session.url && !$session.approved && !$session.rejected}
+                            <div class="qamera-output__actions">
+                                <button type="button" class="qamera-btn qamera-btn--accept"
+                                        data-action="accept-session"
+                                        data-job-id="{$session.job_id|escape:'htmlall':'UTF-8'}">
+                                    {l s='Zatwierdź' mod='qameraai'}
+                                </button>
+                                <button type="button" class="qamera-btn qamera-btn--reject"
+                                        data-vote="reject"
+                                        data-job-id="{$session.job_id|escape:'htmlall':'UTF-8'}">
+                                    {l s='Odrzuć' mod='qameraai'}
+                                </button>
+                            </div>
                         {/if}
                     </figure>
                 {/foreach}

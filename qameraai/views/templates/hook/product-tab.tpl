@@ -36,21 +36,51 @@
             {* ── LEFT: source + session settings ───────────────────────────── *}
             <aside class="qamera-col qamera-col--left">
                 <section class="qamera-card">
-                    <h4 class="qamera-card__title">{l s='Źródło' mod='qameraai'}</h4>
-                    <div class="qamera-field">
-                        <label for="qamera-source-file">{l s='Wgraj zdjęcie produktu' mod='qameraai'}</label>
-                        <input type="file" id="qamera-source-file" accept="image/*" />
-                    </div>
-                    <div class="qamera-field">
-                        <label for="qamera-role">{l s='Rola' mod='qameraai'}</label>
-                        <select id="qamera-role">
-                            <option value="photo">{l s='Zdjęcie (źródło)' mod='qameraai'}</option>
-                            <option value="packshot">{l s='Packshot bezpośredni' mod='qameraai'}</option>
-                        </select>
-                    </div>
-                    <button type="button" class="qamera-btn qamera-btn--primary" id="qamera-generate-packshot">
-                        {l s='Generuj packshot' mod='qameraai'}
-                    </button>
+                    <h4 class="qamera-card__title">{l s='Zdjęcia produktu' mod='qameraai'}</h4>
+                    <p class="qamera-card__hint">{l s='Wybierz zdjęcie z galerii produktu. Dodaj je jako źródło do generacji packshotu albo bezpośrednio jako gotowy packshot.' mod='qameraai'}</p>
+
+                    {if $qamera_gallery|@count == 0}
+                        <p class="qamera-muted">{l s='Brak zdjęć w galerii tego produktu. Dodaj zdjęcia do produktu (zakładka Zdjęcia), aby zacząć.' mod='qameraai'}</p>
+                    {else}
+                        <div class="qamera-gallery">
+                            {foreach from=$qamera_gallery item=g}
+                                <figure class="qamera-gallery__item" data-id-image="{$g.id_image|intval}"
+                                        data-as-image="{if $g.as_image}1{else}0{/if}"
+                                        data-as-packshot="{if $g.as_packshot}1{else}0{/if}">
+                                    {if $g.url}
+                                        <img src="{$g.url|escape:'htmlall':'UTF-8'}" alt="" loading="lazy" />
+                                    {else}
+                                        <div class="qamera-thumb qamera-thumb--placeholder"></div>
+                                    {/if}
+
+                                    <figcaption class="qamera-gallery__badges">
+                                        {if $g.as_image}<span class="qamera-badge qamera-badge--accepted">{l s='źródło' mod='qameraai'}</span>{/if}
+                                        {if $g.as_packshot}<span class="qamera-badge qamera-badge--role">{l s='packshot' mod='qameraai'}</span>{/if}
+                                    </figcaption>
+
+                                    <div class="qamera-gallery__actions">
+                                        {if !$g.as_image && !$g.as_packshot}
+                                            <button type="button" class="qamera-btn qamera-btn--ghost"
+                                                    data-action="register-image" data-id-image="{$g.id_image|intval}">
+                                                {l s='Dodaj jako zdjęcie produktu' mod='qameraai'}
+                                            </button>
+                                            <button type="button" class="qamera-btn qamera-btn--ghost"
+                                                    data-action="register-packshot-direct" data-id-image="{$g.id_image|intval}">
+                                                {l s='Dodaj jako packshot' mod='qameraai'}
+                                            </button>
+                                        {/if}
+                                        {if $g.as_image}
+                                            <button type="button" class="qamera-btn qamera-btn--primary"
+                                                    data-action="generate-packshot" data-id-image="{$g.id_image|intval}">
+                                                {l s='Generuj packshot' mod='qameraai'}
+                                            </button>
+                                        {/if}
+                                    </div>
+                                </figure>
+                            {/foreach}
+                        </div>
+                    {/if}
+
                     <p class="qamera-status" id="qamera-generate-status" role="status" aria-live="polite"></p>
                 </section>
 
@@ -83,15 +113,6 @@
                             <option value="">{l s='— brak —' mod='qameraai'}</option>
                             {foreach from=$qamera_sceneries item=scenery}
                                 <option value="{$scenery.id|escape:'htmlall':'UTF-8'}">{$scenery.name|escape:'htmlall':'UTF-8'}</option>
-                            {/foreach}
-                        </select>
-                    </div>
-
-                    <div class="qamera-field">
-                        <label for="qamera-ai-model">{l s='Model AI' mod='qameraai'}</label>
-                        <select id="qamera-ai-model">
-                            {foreach from=$qamera_ai_models item=aimodel}
-                                <option value="{$aimodel.id|escape:'htmlall':'UTF-8'}">{$aimodel.name|escape:'htmlall':'UTF-8'}</option>
                             {/foreach}
                         </select>
                     </div>
@@ -131,7 +152,7 @@
                 {elseif $qamera_is_empty}
                     <div class="qamera-empty">
                         <p>{l s='Brak zdjęć i packshotów dla tego produktu.' mod='qameraai'}</p>
-                        <p class="qamera-empty__hint">{l s='Wgraj zdjęcie po lewej i wygeneruj packshot, aby zacząć.' mod='qameraai'}</p>
+                        <p class="qamera-empty__hint">{l s='Wybierz zdjęcie z galerii produktu po lewej, dodaj je jako źródło i wygeneruj packshot, aby zacząć.' mod='qameraai'}</p>
                     </div>
                 {else}
 

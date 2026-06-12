@@ -195,3 +195,85 @@
 .qamera-btn--accept:hover { background: #6fa9ab; }
 .qamera-btn--reject { background: #ffffff; color: #842029; border: 1px solid #f5c6cb; }
 .qamera-btn--reject:hover { background: #fdecea; }
+.qamera-btn--delete {
+    background: #ffffff;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    width: 100%;
+    height: 30px;
+    font-size: 12px;
+    margin-top: 6px;
+}
+.qamera-btn--delete:hover { background: #f3f4f6; color: #842029; }
+
+/* Keep action buttons usable even on a rejected (dimmed) card. */
+.qamera-vote--rejected .qamera-packshot__actions { opacity: 1; }
+
+/* Session image accept/reject (Flow B). */
+.qamera-output__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.qamera-output__actions .qamera-btn {
+    width: auto;
+    flex: 1;
+    height: 30px;
+    font-size: 12px;
+    padding: 0 8px;
+}
+
+/* ── Gallery source picker (Core Flow) ───────────────────────── */
+.qamera-card__hint { font-size: 12px; color: #6b7280; margin: 0 0 12px; }
+
+.qamera-gallery {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+.qamera-gallery__item {
+    margin: 0;
+    border: 1px solid #f3f4f6;
+    border-radius: 12px;
+    padding: 8px;
+}
+.qamera-gallery__item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+.qamera-gallery__badges { margin: 6px 0 4px; min-height: 18px; }
+.qamera-gallery__actions { display: flex; flex-direction: column; gap: 6px; }
+.qamera-gallery__actions .qamera-btn { width: 100%; height: 32px; font-size: 12px; padding: 0 8px; }
+
+.qamera-btn--ghost {
+    background: #ffffff;
+    color: #252b30;
+    border: 1px solid #e5e7eb;
+}
+.qamera-btn--ghost:hover { background: #f3f4f6; }
+
+/* ── Loading placeholder tile (immediate, pre-result) ────────── */
+.qamera-thumb--loading {
+    position: relative;
+    aspect-ratio: 1 / 1;
+}
+.qamera-thumb--loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    border: 3px solid #83babc;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: qamera-spin .7s linear infinite;
+}
+.qamera-packshot--loading { border-color: #83babc; }
+
+/* Accepted packshot is selectable as a session source. */
+.qamera-packshot--selectable { cursor: pointer; }
+.qamera-packshot--selectable.qamera-selected { outline: 3px solid #83babc; }

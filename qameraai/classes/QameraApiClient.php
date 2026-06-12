@@ -160,6 +160,41 @@ class QameraApiClient
     }
 
     /**
+     * Register a raw product photo as a catalog source image.
+     * POST /api/v1/plugin/images
+     *
+     * Idempotent per (installation, external_ref). The backing asset is queued
+     * for vision analysis (analysis_status pending -> described); plugins wait
+     * for 'described' before submitting a generation job against it.
+     *
+     * @param string $externalRef     Stable image identifier (unique per installation).
+     * @param string $productRef       Parent product external_ref.
+     * @param string $assetId          asset_id from upload_asset().
+     * @param array  $productMetadata  Optional metadata to cascade-create the product.
+     * @param string $idempotencyKey   Optional Idempotency-Key.
+     * @return array Decoded JSON body (RegisterImagesResponse) on success.
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function register_image($externalRef, $productRef, $assetId, array $productMetadata = [], $idempotencyKey = '')
+    {
+        $item = [
+            'external_ref' => (string) $externalRef,
+            'product_ref' => (string) $productRef,
+            'asset_id' => (string) $assetId,
+        ];
+        if (!empty($productMetadata)) {
+            $item['product_metadata'] = $productMetadata;
+        }
+
+        $headers = [];
+        if ((string) $idempotencyKey !== '') {
+            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
+        }
+
+        return $this->request('POST', '/images', ['images' => [$item]], $headers);
+    }
+
+    /**
      * Register a generation-ready packshot in the product catalog.
      * POST /api/v1/plugin/packshots
      *
@@ -196,6 +231,19 @@ class QameraApiClient
         }
 
         return $this->request('POST', '/packshots', ['packshots' => [$item]], $headers);
+    }
+
+    /**
+     * Hard-delete a packshot from the catalog.
+     * DELETE /api/v1/plugin/packshots/{idOrRef} (204 No Content).
+     *
+     * @param string $idOrRef Packshot UUID or its external_ref.
+     * @return array Empty array on success (no body).
+     * @throws QameraApiException On missing key, transport error, or API error envelope.
+     */
+    public function delete_packshot($idOrRef)
+    {
+        return $this->request('DELETE', '/packshots/' . rawurlencode((string) $idOrRef));
     }
 
     /**

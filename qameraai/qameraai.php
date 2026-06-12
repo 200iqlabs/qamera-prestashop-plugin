@@ -26,6 +26,9 @@ class Qameraai extends Module
     const KEY_API_KEY = 'QAMERA_API_KEY';
     const KEY_DEFAULT_PRESET_ID = 'QAMERA_DEFAULT_PRESET_ID';
     const KEY_API_BASE = 'QAMERA_API_BASE';
+    // AI model (one, shared by packshot + session generation; chosen here, not
+    // in the generator — keeps "wybierz i zatwierdź" free of AI jargon).
+    const KEY_AI_MODEL = 'QAMERA_AI_MODEL';
 
     public function __construct()
     {
@@ -188,6 +191,7 @@ class Qameraai extends Module
     {
         return Configuration::updateValue(self::KEY_API_KEY, '')
             && Configuration::updateValue(self::KEY_DEFAULT_PRESET_ID, '')
+            && Configuration::updateValue(self::KEY_AI_MODEL, '')
             && Configuration::updateValue(self::KEY_API_BASE, QameraApiClient::DEFAULT_API_BASE);
     }
 
@@ -200,6 +204,7 @@ class Qameraai extends Module
     {
         return Configuration::deleteByName(self::KEY_API_KEY)
             && Configuration::deleteByName(self::KEY_DEFAULT_PRESET_ID)
+            && Configuration::deleteByName(self::KEY_AI_MODEL)
             && Configuration::deleteByName(self::KEY_API_BASE);
     }
 
@@ -251,6 +256,7 @@ class Qameraai extends Module
         $apiKey = trim((string) Tools::getValue(self::KEY_API_KEY));
         $apiBase = trim((string) Tools::getValue(self::KEY_API_BASE));
         $presetId = trim((string) Tools::getValue(self::KEY_DEFAULT_PRESET_ID));
+        $aiModel = trim((string) Tools::getValue(self::KEY_AI_MODEL));
 
         if ($apiBase === '') {
             $apiBase = QameraApiClient::DEFAULT_API_BASE;
@@ -259,6 +265,13 @@ class Qameraai extends Module
         Configuration::updateValue(self::KEY_API_KEY, $apiKey);
         Configuration::updateValue(self::KEY_API_BASE, $apiBase);
         Configuration::updateValue(self::KEY_DEFAULT_PRESET_ID, $presetId);
+        Configuration::updateValue(self::KEY_AI_MODEL, $aiModel);
+
+        // The generator (packshot + session) needs an AI model; warn until set.
+        if ($aiModel === '') {
+            return $this->displayConfirmation($this->l('Ustawienia zapisane.'))
+                . $this->displayWarning($this->l('Nie wybrano modelu AI — generacja packshotów i sesji będzie zablokowana, dopóki go nie ustawisz.'));
+        }
 
         return $this->displayConfirmation($this->l('Ustawienia zapisane.'));
     }
@@ -318,6 +331,7 @@ class Qameraai extends Module
     private function renderSettingsForm()
     {
         $presetOptions = $this->getPresetOptions();
+        $aiModelOptions = $this->getAiModelOptions();
 
         $fields = [];
         $fields[] = [
@@ -356,6 +370,31 @@ class Qameraai extends Module
             ];
         }
 
+        // AI model: one for both packshots and sessions. Filtered to image
+        // generators (output_type=image) — sessions/packshots never produce video.
+        if (!empty($aiModelOptions['options'])) {
+            $fields[] = [
+                'type' => 'select',
+                'label' => $this->l('Model AI'),
+                'name' => self::KEY_AI_MODEL,
+                'desc' => $this->l('Wspólny model AI dla packshotów i sesji. Wymagany do generacji.'),
+                'options' => [
+                    'query' => $aiModelOptions['options'],
+                    'id' => 'id',
+                    'name' => 'name',
+                ],
+            ];
+        } else {
+            $fields[] = [
+                'type' => 'text',
+                'label' => $this->l('Model AI (ID)'),
+                'name' => self::KEY_AI_MODEL,
+                'desc' => $aiModelOptions['error'] !== ''
+                    ? $aiModelOptions['error']
+                    : $this->l('Lista modeli AI dostępna po zapisaniu poprawnego klucza API. Format: provider/model.'),
+            ];
+        }
+
         $form = [
             'form' => [
                 'legend' => [
@@ -381,6 +420,7 @@ class Qameraai extends Module
             self::KEY_API_KEY => Configuration::get(self::KEY_API_KEY),
             self::KEY_API_BASE => Configuration::get(self::KEY_API_BASE),
             self::KEY_DEFAULT_PRESET_ID => Configuration::get(self::KEY_DEFAULT_PRESET_ID),
+            self::KEY_AI_MODEL => Configuration::get(self::KEY_AI_MODEL),
         ];
 
         return $helper->generateForm([$form]);
@@ -428,6 +468,38 @@ class Qameraai extends Module
             $name = isset($preset['name']) ? (string) $preset['name'] : (isset($preset['title']) ? (string) $preset['title'] : $id);
             $result['options'][] = ['id' => $id, 'name' => $name];
         }
+
+        return $result;
+    }
+
+    /**
+     * Fetch AI-model options for the settings dropdown, filtered to image
+     * generators (output_type=image — sessions/packshots never produce video).
+     * Reuses the 15-min catalog cache shared with the product-page hook.
+     *
+     * @return array{options: array, error: string}
+     */
+    private function getAiModelOptions()
+    {
+        $result = ['options' => [], 'error' => ''];
+        $client = $this->getApiClient();
+
+        if (!$client->hasKey()) {
+            return $result;
+        }
+
+        try {
+            $res = QameraCatalogCache::remember('catalog_ai_models', function () use ($client) {
+                return $client->get_ai_models();
+            });
+        } catch (QameraApiException $e) {
+            $result['error'] = $this->l('Nie udało się pobrać modeli AI:') . ' ' . $e->getMessage();
+
+            return $result;
+        }
+
+        // extractList drops non-image models (output_type !== 'image').
+        $result['options'] = $this->extractList($res, 'ai_models');
 
         return $result;
     }
@@ -483,6 +555,7 @@ class Qameraai extends Module
             'qamera_ai_models' => [],
             'qamera_presets' => [],
             'qamera_catalog_error' => '',
+            'qamera_gallery' => [],
             'qamera_containers' => [],
             'qamera_standalone_packshots' => [],
             'qamera_is_empty' => true,
@@ -499,6 +572,7 @@ class Qameraai extends Module
             $assign['qamera_ai_models'] = $catalog['ai_models'];
             $assign['qamera_presets'] = $catalog['presets'];
             $assign['qamera_catalog_error'] = $catalog['error'];
+            $assign['qamera_gallery'] = $this->loadGalleryImages($idProduct, $view['registered']);
             $assign['qamera_containers'] = $view['containers'];
             $assign['qamera_standalone_packshots'] = $view['standalone'];
             $assign['qamera_is_empty'] = $view['is_empty'];
@@ -521,6 +595,81 @@ class Qameraai extends Module
     private function buildExternalRef($idProduct)
     {
         return 'ps-' . (int) $idProduct;
+    }
+
+    /**
+     * Parse the PrestaShop id_image out of an external_ref of the shape
+     * ps-{id_product}-img-{id_image} (or legacy ps-img-{id_image}).
+     *
+     * @param string $externalRef
+     * @return int 0 when no match.
+     */
+    private function parseImageIdFromRef($externalRef)
+    {
+        if (preg_match('/img-(\d+)$/', (string) $externalRef, $m)) {
+            return (int) $m[1];
+        }
+
+        return 0;
+    }
+
+    /**
+     * Enumerate the product's own PrestaShop gallery images as selectable
+     * source thumbnails, tagged with their Qamera registration state. This is
+     * the Core Flow source picker — the plugin never uploads its own file; the
+     * merchant adds images to the product gallery the normal PrestaShop way.
+     *
+     * @param int   $idProduct
+     * @param array $registered Map id_image => [as_image, as_packshot] from the API.
+     * @return array List of {id_image, url, cover, as_image, as_packshot}.
+     */
+    private function loadGalleryImages($idProduct, array $registered)
+    {
+        $idProduct = (int) $idProduct;
+        if ($idProduct <= 0) {
+            return [];
+        }
+
+        $idLang = (int) $this->context->language->id;
+
+        try {
+            $images = Image::getImages($idLang, $idProduct);
+        } catch (Exception $e) {
+            return [];
+        }
+        if (!is_array($images)) {
+            return [];
+        }
+
+        $product = new Product($idProduct, false, $idLang);
+        $rewrite = is_array($product->link_rewrite) ? reset($product->link_rewrite) : $product->link_rewrite;
+        if (!$rewrite) {
+            $rewrite = 'product';
+        }
+
+        $out = [];
+        foreach ($images as $img) {
+            $idImage = isset($img['id_image']) ? (int) $img['id_image'] : 0;
+            if ($idImage <= 0) {
+                continue;
+            }
+            $url = '';
+            try {
+                $url = $this->context->link->getImageLink($rewrite, $idProduct . '-' . $idImage, 'home_default');
+            } catch (Exception $e) {
+                $url = '';
+            }
+            $state = isset($registered[$idImage]) ? $registered[$idImage] : ['as_image' => false, 'as_packshot' => false];
+            $out[] = [
+                'id_image' => $idImage,
+                'url' => $url,
+                'cover' => !empty($img['cover']),
+                'as_image' => !empty($state['as_image']),
+                'as_packshot' => !empty($state['as_packshot']),
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -621,7 +770,7 @@ class Qameraai extends Module
      */
     private function buildProductView(QameraApiClient $client, $idProduct)
     {
-        $view = ['containers' => [], 'standalone' => [], 'is_empty' => true, 'error' => '', 'truncated' => false];
+        $view = ['containers' => [], 'standalone' => [], 'is_empty' => true, 'error' => '', 'truncated' => false, 'registered' => []];
 
         $externalRef = $this->buildExternalRef($idProduct);
 
@@ -640,6 +789,36 @@ class Qameraai extends Module
         $images = $this->arr($product, 'images');
         $packshots = $this->arr($product, 'packshots');
 
+        // Registration map: which PrestaShop gallery image (id_image parsed from
+        // external_ref ps-{id_product}-img-{id_image}) is already registered as a
+        // source image and/or as a packshot. Drives the gallery picker buttons.
+        $registered = [];
+        foreach ($images as $img) {
+            if (!is_array($img)) {
+                continue;
+            }
+            $idImage = $this->parseImageIdFromRef(isset($img['external_ref']) ? (string) $img['external_ref'] : '');
+            if ($idImage > 0) {
+                if (!isset($registered[$idImage])) {
+                    $registered[$idImage] = ['as_image' => false, 'as_packshot' => false];
+                }
+                $registered[$idImage]['as_image'] = true;
+            }
+        }
+        foreach ($packshots as $pk) {
+            if (!is_array($pk)) {
+                continue;
+            }
+            $idImage = $this->parseImageIdFromRef(isset($pk['external_ref']) ? (string) $pk['external_ref'] : '');
+            if ($idImage > 0) {
+                if (!isset($registered[$idImage])) {
+                    $registered[$idImage] = ['as_image' => false, 'as_packshot' => false];
+                }
+                $registered[$idImage]['as_packshot'] = true;
+            }
+        }
+        $view['registered'] = $registered;
+
         // Jobs (sessions + packshot generations) scoped to THIS product by
         // product_ref. jobsById resolves generated images by generated_by_job_id;
         // sessionsByPackshot groups photo_shoot results under their source packshot.
@@ -654,7 +833,7 @@ class Qameraai extends Module
             if (!is_array($pk)) {
                 continue;
             }
-            $node = $this->mapPackshot($pk, $sessionsByPackshot, $jobsById);
+            $node = $this->mapPackshot($pk, $sessionsByPackshot, $jobsById, $idProduct);
             $srcImageId = isset($pk['source_image_id']) && $pk['source_image_id'] !== null
                 ? (string) $pk['source_image_id']
                 : '';
@@ -706,9 +885,11 @@ class Qameraai extends Module
      * @param array $pk
      * @param array $sessionsByPackshot Map asset_id -> [session, ...]
      * @param array $jobsById           Map job_id -> job (for image resolution)
+     * @param int   $idProduct          For resolving a directly-registered
+     *                                  packshot's image from its external_ref.
      * @return array
      */
-    private function mapPackshot(array $pk, array $sessionsByPackshot, array $jobsById)
+    private function mapPackshot(array $pk, array $sessionsByPackshot, array $jobsById, $idProduct)
     {
         $assetId = isset($pk['asset_id']) ? (string) $pk['asset_id'] : '';
         $state = $this->votingState($pk); // PackshotVoting: pending|accepted|rejected
@@ -719,6 +900,16 @@ class Qameraai extends Module
         $url = '';
         if ($genJobId !== '' && isset($jobsById[$genJobId])) {
             $url = $this->firstOutputUrl($jobsById[$genJobId]);
+        }
+        // Fallback: a packshot with no generated job output (directly-registered
+        // packshot, or a generation scaffold) still maps to a PrestaShop gallery
+        // image via its external_ref (ps-{id_product}-img-{id_image}) — show that
+        // instead of an empty placeholder.
+        if ($url === '') {
+            $url = $this->resolveLocalImageUrl(
+                isset($pk['external_ref']) ? (string) $pk['external_ref'] : '',
+                $idProduct
+            );
         }
 
         return [
