@@ -30,16 +30,36 @@ ekranie edycji produktu. Nie jest programistą — konfiguracja musi być wkleje
 **Jako merchant, ze zdjęcia produktu generuję zestaw zdjęć sesyjnych Qamera AI i publikuję zatwierdzone
 w galerii produktu — w całości z karty produktu PrestaShop.**
 
-Ścieżka end-to-end (dwuetapowy pipeline, jak w WooCommerce):
+Ścieżka end-to-end (dwuetapowy pipeline, jak w WooCommerce). **Źródłem są zdjęcia, które już
+są w galerii produktu PrestaShop — wtyczka NIE przyjmuje uploadu własnego pliku.** Merchant
+najpierw dodaje zdjęcia do karty produktu (standardowy mechanizm PS), potem operuje na nich w
+zakładce Qamera AI:
 
 ```
+Karta produktu → dodaj zdjęcia do galerii (standardowy PrestaShop)
 Karta produktu → zakładka "Qamera AI"
-  1. Wybierz zdjęcie produktu (z galerii sklepu lub wgraj)        [źródło]
-  2. "Generuj packshot" → upload+submit (sync, spinner) → polling → wynik
-  3. Zatwierdź packshot                                            [accept vote]
-  4. Ustaw parametry sesji (preset, model, sceneria, proporcje, model AI, kontekst, count 1–10)
-  5. "Stwórz sesję" z packshota → upload/reuse+submit (sync) → polling → wyniki sesji
-  6. Zatwierdź wybrane sesje → import do galerii produktu (ps_image)  [publikacja]
+  1. Wtyczka listuje zdjęcia NALEŻĄCE do produktu (galeria PS) jako wybieralne miniatury  [źródło]
+  2. Dla każdego zdjęcia dwie opcje:
+       a) „Dodaj jako zdjęcie produktu"  → rejestracja POST /images   (źródło do generacji)
+       b) „Dodaj jako packshot"          → rejestracja POST /packshots (gotowy packshot, bez generacji)
+  3. Na zdjęciu dodanym jako „zdjęcie produktu": „Generuj packshot"
+       → bez parametrów: packshot to czyste tło, generuje się 1 sztuka,
+         modelem AI ustawionym w konfiguracji modułu (nie w generatorze)
+       → NATYCHMIAST pojawia się puste pole z placeholderem
+       → po pollingu placeholder zamienia się na realnie wygenerowany packshot
+  4. Wygenerowany packshot: zatwierdź lub odrzuć
+       • odrzuć  → packshot usunięty (DELETE)
+       • zatwierdź → zmiana statusu na „zatwierdzony"; packshot staje się wybieralny
+  5. Ustaw parametry sesji w stałym panelu (lewa kolumna) — jedno źródło prawdy:
+     preset, model (manekin), sceneria, proporcje, kontekst, count 1–10.
+     (Model AI NIE jest tu — pochodzi z konfiguracji modułu, wspólny dla packshota i sesji.)
+  6. Na zatwierdzonym (lub bezpośrednim) packshocie: „Generuj sesję zdjęciową"
+       → zlecenie z parametrami ustawionymi w panelu po lewej
+       → NATYCHMIAST pojawia się N placeholderów (wg count z ustawień sesji)
+       → po pollingu każdy placeholder zamienia się na realne wygenerowane zdjęcie
+  7. Każde wygenerowane zdjęcie sesji: zatwierdź lub odrzuć
+       • zatwierdź → zdjęcie trafia do galerii produktu PrestaShop (ps_image)   [publikacja]
+       • odrzuć    → zdjęcie usunięte (DELETE)
 ```
 
 Reguła twarda: **sesja zawsze powstaje z packshota, nigdy wprost ze zdjęcia.**
@@ -48,11 +68,13 @@ Reguła twarda: **sesja zawsze powstaje z packshota, nigdy wprost ze zdjęcia.**
 
 - [ ] Merchant wkleja klucz API w konfiguracji modułu i widzi status konta + saldo kredytów.
 - [ ] Na karcie produktu jest zakładka "Qamera AI" z UI generatora.
-- [ ] Z wybranego zdjęcia można wygenerować packshot; wynik pojawia się po pollingu bez przeładowania.
-- [ ] Packshot można zatwierdzić (accept) lub odrzucić (reject).
+- [ ] Wtyczka listuje zdjęcia należące do produktu (galeria PS) jako wybieralne miniatury — bez uploadu pliku do wtyczki.
+- [ ] Każde zdjęcie ma dwie opcje: „dodaj jako zdjęcie produktu" (POST /images) i „dodaj jako packshot" (POST /packshots).
+- [ ] Ze zdjęcia dodanego jako „zdjęcie produktu" można wygenerować packshot; natychmiast pojawia się placeholder, który po pollingu zamienia się na wynik (bez przeładowania).
+- [ ] Packshot można zatwierdzić (accept → status „zatwierdzony", wybieralny) lub odrzucić (reject → usunięcie).
 - [ ] Z zatwierdzonego (lub bezpośredniego) packshota można zlecić sesję z pełnym zestawem parametrów.
-- [ ] Wyniki sesji pojawiają się po pollingu; każdy można zatwierdzić lub odrzucić.
-- [ ] Zatwierdzona sesja trafia jako obraz produktu do galerii PrestaShop (storefront).
+- [ ] Sesja pokazuje N placeholderów wg count; po pollingu każdy zamienia się na realne zdjęcie; każde można zatwierdzić lub odrzucić.
+- [ ] Zatwierdzone zdjęcie sesji trafia do galerii produktu PrestaShop (ps_image, storefront); odrzucone jest usuwane.
 - [ ] Stan (role, packshoty, sesje, akceptacje) odtwarza się po przeładowaniu strony — z API Qamery.
 - [ ] Działa na PrestaShop 8.x oraz 9.x.
 
@@ -61,6 +83,7 @@ Reguła twarda: **sesja zawsze powstaje z packshota, nigdy wprost ze zdjęcia.**
 **Configuration (ps_configuration):**
 - `QAMERA_API_KEY` — klucz API (format `mk_live_<keyId>.<secret>`)
 - `QAMERA_DEFAULT_PRESET_ID` — domyślny preset
+- `QAMERA_AI_MODEL` — model AI (jeden, wspólny dla generacji packshota i sesji; wybierany w konfiguracji, nie w generatorze)
 - `QAMERA_API_BASE` — base URL API (default prod; override przez konfig dla local/dev)
 - (opcjonalnie później) `QAMERA_WEBHOOK_SECRET` — gdy dojdzie webhook
 
@@ -90,7 +113,7 @@ asset_id, sha256) pochodzi z API: `GET /products/{external_ref}` (embedded image
 
 **Mapowanie sklep ↔ Qamera** przez stabilny `external_ref`:
 - produkt: `ps-{id_product}`
-- zdjęcie źródłowe: `ps-img-{id_image}`
+- zdjęcie źródłowe (z galerii PS): `ps-{id_product}-img-{id_image}` — wiąże rejestrację Qamery z konkretnym `ps_image`, pozwala odtworzyć miniaturę przez `getImageLink`.
 
 ## §5 Track / stack lock
 
@@ -104,6 +127,7 @@ asset_id, sha256) pochodzi z API: `GET /products/{external_ref}` (embedded image
 - **Komunikacja z API:** cURL (Guzzle jeśli dostępny w PS), nagłówek `X-Api-Key`, baza
   `/api/v1/plugin/*`, koperta błędu `{ error: { code, message_i18n } }`, `Idempotency-Key` na mutacjach.
 - **UI:** zakładka na karcie produktu (`displayAdminProductsExtra`), settings w `getContent()` modułu.
+- **Model AI:** wybierany w konfiguracji modułu (`getContent`), jeden dla packshota i sesji — generator bez dropdownu modelu AI (zero żargonu AI w „wybierz i zatwierdź").
 
 ### Esencja brandu (pełny: `context/brand.md`)
 
@@ -131,8 +155,9 @@ archetyp Creator+Sage, ton profesjonalny/bezpośredni/ekspercki (bez hype, zakaz
    sklepach). Gdy dojdzie multistore → prefiks `shop{id_shop}-`. Na MVP zakładamy 1 sklep. (potwierdzić)
 2. **`analysis_status`:** API wymaga `analysis_status='described'` (Gemini) zanim można `submit photo_shoot`
    na zdjęciu. Wtyczka musi czekać/pollować ten stan przed sesją. (uwzględnione w buildzie M3)
-3. **Bezpośredni packshot z galerii:** czy merchant może oznaczyć istniejący obraz sklepu jako gotowy
-   packshot (jak WooCommerce "add as packshot"), czy tylko generowane? Domyślnie: tak, oba. (potwierdzić)
+3. **Bezpośredni packshot z galerii:** ✅ ROZSTRZYGNIĘTE — każde zdjęcie z galerii produktu ma dwie
+   opcje: „dodaj jako zdjęcie produktu" (źródło do generacji, POST /images) ORAZ „dodaj jako packshot"
+   (gotowy packshot bez generacji, POST /packshots). Źródłem jest galeria PS, nie upload do wtyczki.
 4. **Limit pollingu:** 3s interwał / 5 min max (jak WooCommerce). (domyślnie tak)
 5. **Środowisko dev:** czy testujemy na lokalnym SaaS (`QAMERA_API_BASE` override), czy od razu prod
    `https://qamera.ai`? (potrzebne do M1)
