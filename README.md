@@ -1,75 +1,94 @@
-# VB MVP Template — Startup Builders #2, Week 3
+# Qamera AI for PrestaShop
 
-Forkowalny **szablon build** na 7-dniowy build MVP. Czysty scaffold: kontekst z W1/W2, reguły dla agenta i 4 prompty jako komendy. Tu **budujesz** — materiały do czytania (playbook, prezentacja, prompty paste) są obok.
+Moduł PrestaShop integrujący **Qamera AI** - z karty produktu generujesz packshoty i sesje
+produktowe i publikujesz zatwierdzone wyniki w galerii produktu, bez opuszczania panelu.
 
-> 📚 **Materiały kursowe (playbook + prompty + prezentacja):** https://github.com/plipowczan/vb-w3-materials
-> Ten repo trzymamy czysty, żeby kontekst agenta nie był zaśmiecony dokumentami.
-
-**Jak korzystać — zależnie od ścieżki:**
-- **Track Tech** → *Use this template*, pracujesz w repo, prompty jako komendy `/brand` `/prd` `/reguly` `/milestones`.
-- **Track Builder** → prompty do wklejenia bierzesz z [repo materiałów](https://github.com/plipowczan/vb-w3-materials) (`prompts/`) i kopiujesz do Lovable/v0/czatu. Opcjonalnie użyj tego szablonu jako magazynu kontekstu (artefakty W1/W2 + log decyzji przez GitHub sync).
+Cienki wrapper na [API Qamera AI](https://qamera.ai). Źródłem prawdy o stanie generacji
+(role, status, akceptacja, lineage) jest API Qamery, **nie** baza wtyczki.
 
 ---
 
-## 1. Załóż swoje repo z tego szablonu (5 min)
+## Co robi (Core Flow)
 
-1. Kliknij **"Use this template" → Create a new repository** (zielony przycisk u góry) → nazwij jak projekt (np. `clear-table-mvp`). To czystsze niż fork — dostajesz własną historię, bez powiązania z oryginałem.
-2. Sklonuj lokalnie (Track Tech) albo zostaw na GitHub (Track Builder + sync).
-3. Wrzuć artefakty z poprzednich tygodni do `context/` (patrz niżej).
-4. **Track Tech:** otwórz repo w Claude Code — komendy `/brand`, `/prd`, `/reguly`, `/milestones` są od razu dostępne (siedzą w `.claude/commands/`, czytają pliki repo).
-5. **Track Builder:** prompty do wklejenia (wersje z blokami PROMPT START/END) są w [repo materiałów → `prompts/`](https://github.com/plipowczan/vb-w3-materials/tree/main/prompts). Komendy w `.claude/commands/` są dla Claude Code (czytają pliki repo), więc do wklejania użyj tamtych.
+Cały przepływ z karty produktu PrestaShop (układ pionowy: **Zdjęcia produktu** → **Ustawienia sesji** → **Zdjęcia platformy**):
 
-## 2. Co gdzie wrzucić
+1. **Zdjęcie produktu** (galeria PS) → rejestracja w katalogu Qamera: „Dodaj jako zdjęcie produktu" (źródło) albo „Dodaj jako packshot" (gotowy packshot, bez generacji). Po rejestracji kafelek pojawia się od razu w sekcji „Zdjęcia platformy" (bez przeładowania).
+2. **Packshot** — „Generuj packshot" na zdjęciu platformy: `job_type=packshot`, 1 sztuka, bez parametrów stylu (sync + polling). Model AI z konfiguracji modułu.
+3. **Akceptacja** packshota (accept/reject) — zatwierdzony (lub bezpośredni) staje się źródłem sesji.
+4. **Sesja produktowa** — „Generuj sesję" na packshocie: `job_type=photo_shoot` z parametrami z lewego/górnego panelu (preset/model manekina/sceneria/proporcje/kontekst, count 1-10). Model AI z konfiguracji (wspólny z packshotem).
+5. **Publikacja** — zatwierdzone wyniki sesji trafiają do galerii produktu (`ps_image`, storefront); dedup po sha outputu.
 
-```
-context/
-├─ w1/          ← artefakty Week 1 (Bartosz): bhc.md, deep-analysis.md, mom-test-notes.md
-├─ w2/          ← artefakty Week 2 (Damian): icp.md, positioning.md, insights-playbook.md, landing-brief.md
-└─ brand.md     ← generowany komendą /brand (krok 1) — NIE wrzucasz ręcznie
+Twarda reguła: **sesja zawsze z packshota, nigdy wprost ze zdjęcia.**
 
-prd.md          ← generowany /prd (krok 2)
-goals.md        ← generowany /milestones (krok 4) + Twój log decyzji
-CLAUDE.md       ← reguły projektu (Track Tech) — generowane /reguly (krok 3)
-AGENTS.md       ← to samo dla innych narzędzi agentowych (otwarty standard)
-README.md       ← ten plik; po deployu dopisz URL produkcyjny
-```
+**Pełny opis procesu (krok po kroku, z endpointami i stanami):** [`docs/process.md`](docs/process.md).
 
-**Zasada:** struktura folderów jest **odwzorowana w `CLAUDE.md` i w komendach** — agent wie, że kontekst W1 siedzi w `context/w1/`, brand w `context/brand.md` itd. Nie zmieniaj nazw bez aktualizacji `CLAUDE.md`.
+> **Model AI** wybierany **raz** w konfiguracji modułu (`QAMERA_AI_MODEL`, lista z `GET /ai-models` filtrowana do `output_type=image`) — wspólny dla packshota i sesji. Generator nie ma dropdownu modelu AI. Bez ustawionego modelu generacja jest zablokowana z czytelnym komunikatem.
 
-## 3. Kolejność (każdy krok konsumuje poprzedni)
+## Stack
 
-| Krok | Komenda | Output | Konsumuje |
-|---|---|---|---|
-| 1 | `/brand` | `context/brand.md` | `context/w2/` (ICP, positioning) |
-| 2 | `/prd` | `prd.md` | `context/w1/` + `context/w2/` + `brand.md` |
-| 3 | `/reguly` | `CLAUDE.md` / `AGENTS.md` / Lovable Knowledge | `prd.md` + `brand.md` |
-| 4 | `/milestones` | `goals.md` | `prd.md` |
+- **PrestaShop 8.x (PHP 7.4+) oraz 9.x (PHP 8.1+)** - jeden moduł, kod zgodny z PHP 7.4.
+- Slug: `qameraai`. Widoki: Smarty (`.tpl`). HTTP: cURL, nagłówek `X-Api-Key`, baza `/api/v1/plugin/*`.
+- **Async: brak** - upload+submit synchronicznie w AJAX; wynik przez **polling** `GET /jobs/{id}`. Bez crona, kolejki, webhooka (MVP).
+- Stan lokalny **Thin-B** - Configuration + 2 tabele tylko z ID (`ps_qamera_order`, `ps_qamera_import`). Reszta z API.
+- UI: zakładka `displayAdminProductsExtra` na karcie produktu; ustawienia w `getContent()`.
 
-Pełny opis każdej fazy (Fazy 0–5, anty-wzorce, realne czasy): **[PLAYBOOK.md w repo materiałów](https://github.com/plipowczan/vb-w3-materials/blob/main/PLAYBOOK.md)**.
-
-## 4. Track Tech — skille z shared-skills (opcjonalnie)
-
-Zamiast komendy `/prd` możesz użyć pełnego skilla `prd`, a w Fazie 4 skilla `/prepare-goal`. Instalacja w Claude Code:
+## Architektura (gdzie co leży)
 
 ```
-/plugin marketplace add 200iqlabs/shared-skills
-/plugin install 200iqlabs-agent-skills
+qameraai/
++- qameraai.php                          <- klasa Module: install/uninstall, hooki, render zakładki
++- classes/QameraApiClient.php           <- HTTP wrapper API Qamery (X-Api-Key, error envelope)
++- controllers/admin/
+|  \- AdminQameraAjaxController.php       <- proxy AJAX server-side (klucz API nigdy w przeglądarce)
+\- views/
+   +- templates/hook/                     <- product-tab.tpl, _packshot.tpl
+   +- js/qamera-product.js                <- polling, accept/reject, render bez przeładowania
+   \- css/qamera-admin.css                <- style (brand: grafit #252b30, teal #83babc, Inter)
 ```
 
-Alternatywnie jako **submoduł** repo (jeśli wolisz mieć skille wersjonowane razem z projektem):
+Klucz API żyje w `ps_configuration` (ekran ustawień modułu), **nie** w `.env`.
 
+## Instalacja
+
+1. Skopiuj katalog `qameraai/` do `modules/` swojego PrestaShop (albo zainstaluj ZIP przez Menedżer modułów).
+2. Panel admina -> **Moduły** -> zainstaluj "Qamera AI for PrestaShop".
+3. Konfiguracja modułu -> wklej **klucz API** Qamera (format `mk_live_...`).
+   Klucz pobierzesz z konta Qamera AI (panel -> integracje/plugin API).
+4. Po zapisaniu klucza zobaczysz status konta + saldo kredytów (`GET /me`).
+5. Otwórz dowolny produkt -> zakładka **Qamera AI**.
+
+## Środowisko dev / test
+
+PrestaShop przez Docker (`docker-compose.yml`, profile):
+
+```bash
+docker compose --profile ps8 up -d   # PS8 -> http://localhost:8082
+docker compose --profile ps9 up -d   # PS9 -> http://localhost:8091
 ```
-git submodule add https://github.com/200iqlabs/shared-skills shared-skills
-```
 
-Komendy w `.claude/commands/` to **uniwersalne odpowiedniki** skilli — działają bez instalacji, w każdym narzędziu. Jeśli skill jest w shared-skills (`prd`, `prepare-goal`) → użyj skilla. Jeśli nie ma (brand, reguły, milestones) → komenda z tego repo.
+- Admin: `/admin-dev`, login `admin@qamera.test` / hasło `qameraadmin1`.
+- Moduł montowany live z `./qameraai` -> zmiany w kodzie widać po odświeżeniu (czasem wyczyść cache PS).
+- Reset: `docker compose --profile ps8 down -v` (kasuje bazę + pliki sklepu).
 
-## 5. Log decyzji
+**Smoke / probe API** (`tools/`, poza modułem, nie shippowane): `tools/smoke-api.php` (`/me` + `/presets`),
+`tools/probe-m2.php` (`/jobs`, `/products/{ref}`), `tools/smoke-m4-ui.py` (render zakładki, bez kredytów),
+`tools/flow-b.py` (Playwright E2E Flow B live — generacja sesji + publikacja, **zużywa kredyty**). Klucz czytany z `.env` (kopiuj z `.env.example`).
 
-`goals.md` ma sekcję **Log decyzji** — dopisuj 1 linię na sesję ("M3: wybrałem flow bez koszyka, bo §3 ma jeden produkt").
-- **Track Tech:** poproś agenta `dopisz decyzje z tej sesji do goals.md`.
-- **Track Builder:** Lovable nie zapisze do pliku z czatu — prowadź ręcznie, albo commituj przez GitHub sync.
+> **Nigdy nie commituj `.env` ani klucza `mk_live_...`.** `.env` jest w `.gitignore`.
 
----
+## Status (milestone'y -> `goals.md`)
 
-_Pytania w trakcie tygodnia → grupa programu. Bloker > 30 min = pisz._
+| Milestone | Zakres | Stan |
+|---|---|---|
+| M1 | Fundament modułu + `QameraApiClient` (`/me`, `/presets`) | ✅ |
+| M2 | Zakładka produktu + odczyt stanu z API (`/products/{ref}`, `/jobs`) | ✅ |
+| M3 | Flow A: zdjęcie -> packshot (sync + polling, accept/reject) | ✅ (PS8 live; PS9 do testu) |
+| M4 | Flow B: packshot -> sesja + publikacja do galerii | ✅ (PS8 live; pełne e2e + PS9 do testu) |
+| M5 | Hardening (błędy API, i18n PL+EN) + ZIP dystrybucyjny | ⬜ todo |
+
+## Dokumentacja
+
+- **API Qamera** (kontrakt): OpenAPI 3.1 - https://qamera.ai/openapi/plugin-v1.yaml |
+  [Redoc](https://redocly.github.io/redoc/?url=https://qamera.ai/openapi/plugin-v1.yaml)
+- **PrestaShop dev docs:** [PS8](https://devdocs.prestashop-project.org/8/) | [PS9](https://devdocs.prestashop-project.org/9/)
+- Reguły projektu i konwencje: `CLAUDE.md`. Co budujemy (Core Flow §3, out-of-scope §6): `prd.md`. Milestone'y + log decyzji: `goals.md`.
