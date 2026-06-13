@@ -375,9 +375,28 @@ class AdminQameraAjaxController extends ModuleAdminController
         if ($idImage <= 0) {
             return '';
         }
-        $path = _PS_PROD_IMG_DIR_ . Image::getImgFolderStatic($idImage) . $idImage . '.jpg';
+        $path = $this->productImageDir() . Image::getImgFolderStatic($idImage) . $idImage . '.jpg';
 
         return is_file($path) ? $path : '';
+    }
+
+    /**
+     * Absolute product-image base dir, resolved compatibly across PS8/PS9.
+     * _PS_PROD_IMG_DIR_ is not guaranteed to be defined in this AJAX controller
+     * context on PrestaShop 9, so fall back to the known img/p/ location.
+     *
+     * @return string Trailing-slash directory path.
+     */
+    private function productImageDir()
+    {
+        if (defined('_PS_PROD_IMG_DIR_')) {
+            return _PS_PROD_IMG_DIR_;
+        }
+        if (defined('_PS_IMG_DIR_')) {
+            return _PS_IMG_DIR_ . 'p/';
+        }
+
+        return rtrim(_PS_ROOT_DIR_, '/\\') . '/img/p/';
     }
 
     /**

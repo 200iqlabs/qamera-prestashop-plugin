@@ -21,3 +21,7 @@ npm-debug.log*
 
 # dev tooling artifacts
 tools/cacert.pem
+tools/_shots/
+
+# PrestaShop generated module config cache (per-install, not source)
+qameraai/config_*.xml
