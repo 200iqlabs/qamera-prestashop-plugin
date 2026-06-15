@@ -702,12 +702,12 @@
             return;
         }
         var fig = target.closest ? target.closest('.qamera-output') : null;
-        target.disabled = true;
+        setActionsDisabled(fig, true);
         setStatus(root, t('publishing', 'Publikowanie zdjęcia w galerii…'), 'busy');
 
         postForm(actionUrl(ctx, 'acceptSession'), formData({ job_id: jobId, id_product: ctx.idProduct })).then(function (res) {
             if (!res || !res.ok) {
-                target.disabled = false;
+                setActionsDisabled(fig, false);
                 setStatus(root, (res && res.error) ? res.error : t('publishFailed', 'Nie udało się opublikować zdjęcia.'), 'error');
                 return;
             }
@@ -725,10 +725,25 @@
                 res.duplicate ? t('alreadyInGallery', 'Zdjęcie było już w galerii produktu.') : t('publishedOk', 'Zatwierdzono — dodano do galerii produktu.'),
                 'success'
             );
+            // The published image lands in ps_image server-side, but PrestaShop's
+            // native product gallery is a separate component we can't push into.
+            // Reload so it appears there — but only when nothing else is still
+            // generating: polling does not auto-resume on load, so reloading mid
+            // generation would strand those tiles. State rebuilds from the API.
+            if (!res.duplicate && !hasActiveWork(root)) {
+                setTimeout(function () { window.location.reload(); }, 1500);
+            }
         }).catch(function () {
-            target.disabled = false;
+            setActionsDisabled(fig, false);
             setStatus(root, t('netPublish', 'Błąd sieci podczas publikacji.'), 'error');
         });
+    }
+
+    /** True while any tile is still generating/polling (a loading placeholder
+        is on screen). Reloading then would strand it — polling does not resume
+        automatically after a page load. */
+    function hasActiveWork(root) {
+        return !!root.querySelector('.qamera-thumb--loading');
     }
 
     /** Add a "Generuj sesję" button to a freshly approved packshot tile. */
@@ -752,6 +767,17 @@
         }
     }
 
+    /** Disable/enable every action button on a card so the whole vote pair
+        (accept + reject + delete) locks during an in-flight request, not just
+        the clicked one. */
+    function setActionsDisabled(fig, disabled) {
+        if (!fig) { return; }
+        var btns = fig.querySelectorAll('.qamera-output__actions button, .qamera-packshot__actions button');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].disabled = disabled;
+        }
+    }
+
     /** Remove the accept/reject vote buttons from a card. */
     function removeVoteButtons(fig) {
         if (!fig) { return; }
@@ -769,12 +795,12 @@
         var fig = target.closest ? target.closest('.qamera-packshot, .qamera-output') : null;
         var isPackshot = fig && fig.classList && fig.classList.contains('qamera-packshot');
         var isOutput = fig && fig.classList && fig.classList.contains('qamera-output');
-        target.disabled = true;
+        setActionsDisabled(fig, true);
 
         var action = vote === 'accept' ? 'acceptJob' : 'rejectJob';
         postForm(actionUrl(ctx, action), formData({ job_id: jobId })).then(function (res) {
             if (!res || !res.ok) {
-                target.disabled = false;
+                setActionsDisabled(fig, false);
                 setStatus(root, (res && res.error) ? res.error : t('voteSaveFailed', 'Nie udało się zapisać oceny.'), 'error');
                 return;
             }
@@ -804,7 +830,7 @@
                 return;
             }
 
-            target.disabled = false;
+            setActionsDisabled(fig, false);
             if (fig) {
                 fig.className = fig.className.replace(/qamera-vote--\w+/, 'qamera-vote--' + res.voting);
                 fig.setAttribute('data-voting', res.voting);
@@ -818,7 +844,7 @@
             }
             setStatus(root, vote === 'accept' ? t('packshotAccepted', 'Packshot zatwierdzony.') : t('rejected', 'Odrzucono.'), 'success');
         }).catch(function () {
-            target.disabled = false;
+            setActionsDisabled(fig, false);
             setStatus(root, t('netVote', 'Błąd sieci podczas zapisu oceny.'), 'error');
         });
     }
