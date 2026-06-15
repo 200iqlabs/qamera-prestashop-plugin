@@ -30,12 +30,18 @@ with sync_playwright() as p:
     pg.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
     pg.on("requestfailed", lambda r: failed_requests.append(r.url + " :: " + str(r.failure)))
 
-    # 1) login
-    pg.goto(BASE + "/admin-dev/", wait_until="networkidle")
+    # 1) login (PS9 admin never reaches networkidle: dashboard widgets keep
+    #    polling; first load after a restart recompiles slowly — use "commit")
+    pg.set_default_navigation_timeout(60000)
+    pg.goto(BASE + "/admin-dev/", wait_until="commit")
+    pg.wait_for_selector('input[name="email"]', timeout=20000)
     pg.fill('input[name="email"]', "admin@qamera.test")
     pg.fill('input[name="passwd"]', "qameraadmin1")
     pg.locator('input[name="passwd"]').press("Enter")
-    pg.wait_for_url(lambda u: "AdminLogin" not in u, timeout=20000)
+    for _ in range(30):
+        pg.wait_for_timeout(1000)
+        if "AdminLogin" not in pg.url and pg.locator('input[name="email"]').count() == 0:
+            break
     log("login OK")
 
     # 2) first product -> edit (PS9 route: sell/catalog/products/ ; edit: products/{id}/edit)
@@ -44,7 +50,7 @@ with sync_playwright() as p:
         "els=>els.map(e=>e.href).filter(x=>x&&x.indexOf('sell/catalog/products/')>-1&&x.indexOf('create')==-1&&x.indexOf('preferences')==-1)",
     )
     log("products list link:", h[0] if h else "NONE")
-    pg.goto(h[0], wait_until="networkidle")
+    pg.goto(h[0], wait_until="commit")
     pg.wait_for_timeout(2500)
     ed = pg.eval_on_selector_all(
         "table a, a",
@@ -54,7 +60,7 @@ with sync_playwright() as p:
     if not ed:
         pg.screenshot(path=OUT + "/ps9-no-product.png", full_page=True)
         raise SystemExit("no product to edit on PS9 (demo data missing?)")
-    pg.goto((BASE + ed) if ed.startswith("/") else ed, wait_until="networkidle")
+    pg.goto((BASE + ed) if ed.startswith("/") else ed, wait_until="commit")
     pg.wait_for_timeout(3000)
 
     # 3) Modules tab + Konfiguruj (open the qameraai extra tab)
@@ -107,6 +113,26 @@ with sync_playwright() as p:
         route_body = res["body"]
     log("AJAX getJob HTTP status (want 200):", route_status)
     log("AJAX getJob body head:", route_body)
+
+    # 8) i18n payload: #qamera-i18n must render through PS Smarty and parse as
+    #    JSON (proves {l ... js=1} + {ldelim}/{rdelim} wiring is correct live,
+    #    not just in the offline simulation). EN is not an installed shop lang
+    #    here, so values are PL; correctness of en.php is covered statically.
+    i18n = pg.evaluate(
+        """()=>{
+            const n = document.getElementById('qamera-i18n');
+            if (!n) return {ok:false, reason:'no #qamera-i18n node'};
+            try {
+                const o = JSON.parse(n.textContent || '{}');
+                return {ok:true, keys:Object.keys(o).length,
+                        genSession:o.genSession, analyzing:o.analyzing, confirmDelete:o.confirmDelete};
+            } catch (e) { return {ok:false, reason:String(e), head:(n.textContent||'').slice(0,120)}; }
+        }"""
+    )
+    log("i18n payload parsed:", i18n.get("ok"), "| keys (want 56):", i18n.get("keys"))
+    log("   genSession:", i18n.get("genSession"), "| analyzing:", i18n.get("analyzing"))
+    if not i18n.get("ok"):
+        log("   i18n FAIL:", i18n.get("reason"), i18n.get("head", ""))
 
     if has_tab:
         root.first.screenshot(path=OUT + "/ps9-tab.png")
