@@ -19,6 +19,71 @@
      data-default-preset="{$qamera_default_preset_id|escape:'htmlall':'UTF-8'}"
      data-ajax-url="{$qamera_ajax_url|escape:'htmlall':'UTF-8'}">
 
+    {* i18n payload for product-tab.js: strings rendered client-side (progress,
+       button labels, confirms) routed through the PrestaShop translation domain
+       so the JS UI is PL/EN like the server. The script reads it via JSON.parse;
+       js=1 escaping keeps the values JSON-safe. *}
+    <script type="application/json" id="qamera-i18n">
+    {ldelim}
+        "addingPackshot": "{l s='Dodawanie jako packshot…' mod='qameraai' js=1}",
+        "addingImage": "{l s='Dodawanie jako zdjęcie produktu…' mod='qameraai' js=1}",
+        "addFailed": "{l s='Nie udało się dodać zdjęcia.' mod='qameraai' js=1}",
+        "addedPackshot": "{l s='Dodano jako packshot.' mod='qameraai' js=1}",
+        "addedImage": "{l s='Dodano jako zdjęcie produktu — możesz wygenerować packshot poniżej.' mod='qameraai' js=1}",
+        "netAdd": "{l s='Błąd sieci podczas dodawania.' mod='qameraai' js=1}",
+        "badgeSource": "{l s='źródło' mod='qameraai' js=1}",
+        "badgePackshotLower": "{l s='packshot' mod='qameraai' js=1}",
+        "labelPhoto": "{l s='Zdjęcie' mod='qameraai' js=1}",
+        "genPackshot": "{l s='Generuj packshot' mod='qameraai' js=1}",
+        "rolePackshot": "{l s='Packshot' mod='qameraai' js=1}",
+        "accepted": "{l s='Zatwierdzony' mod='qameraai' js=1}",
+        "genSession": "{l s='Generuj sesję' mod='qameraai' js=1}",
+        "delete": "{l s='Usuń' mod='qameraai' js=1}",
+        "prepSource": "{l s='Przygotowanie zdjęcia źródłowego…' mod='qameraai' js=1}",
+        "analyzing": "{l s='Analiza zdjęcia źródłowego… (próba %s)' mod='qameraai' js=1}",
+        "genStartFailed": "{l s='Nie udało się rozpocząć generacji.' mod='qameraai' js=1}",
+        "genPackshotBusy": "{l s='Generowanie packshotu… (to może potrwać do kilku minut)' mod='qameraai' js=1}",
+        "netUpload": "{l s='Błąd sieci podczas wysyłki. Spróbuj ponownie.' mod='qameraai' js=1}",
+        "jobStatusFailed": "{l s='Nie udało się odczytać statusu zadania.' mod='qameraai' js=1}",
+        "packshotReady": "{l s='Packshot gotowy.' mod='qameraai' js=1}",
+        "genFailedWith": "{l s='Generacja nie powiodła się: %s' mod='qameraai' js=1}",
+        "genFailed": "{l s='Generacja nie powiodła się.' mod='qameraai' js=1}",
+        "genCancelled": "{l s='Generacja anulowana.' mod='qameraai' js=1}",
+        "jobEndedState": "{l s='Zadanie zakończone w stanie: %s' mod='qameraai' js=1}",
+        "pollTimeout5": "{l s='Przekroczono limit oczekiwania (5 min). Odśwież stronę, aby sprawdzić wynik.' mod='qameraai' js=1}",
+        "statusCheckErr": "{l s='Błąd podczas sprawdzania statusu.' mod='qameraai' js=1}",
+        "accept": "{l s='Zatwierdź' mod='qameraai' js=1}",
+        "reject": "{l s='Odrzuć' mod='qameraai' js=1}",
+        "labelSessions": "{l s='Sesje' mod='qameraai' js=1}",
+        "sessionAssign": "{l s='Zlecanie sesji…' mod='qameraai' js=1}",
+        "sessionStartFailed": "{l s='Nie udało się zlecić sesji.' mod='qameraai' js=1}",
+        "sessionBusy": "{l s='Generowanie sesji… (to może potrwać do kilku minut)' mod='qameraai' js=1}",
+        "netSession": "{l s='Błąd sieci podczas zlecania sesji.' mod='qameraai' js=1}",
+        "pollTimeoutShort": "{l s='Przekroczono limit oczekiwania.' mod='qameraai' js=1}",
+        "stateColon": "{l s='Stan: %s' mod='qameraai' js=1}",
+        "failedShort": "{l s='Nie powiodło się.' mod='qameraai' js=1}",
+        "publishing": "{l s='Publikowanie zdjęcia w galerii…' mod='qameraai' js=1}",
+        "publishFailed": "{l s='Nie udało się opublikować zdjęcia.' mod='qameraai' js=1}",
+        "alreadyInGallery": "{l s='Zdjęcie było już w galerii produktu.' mod='qameraai' js=1}",
+        "publishedOk": "{l s='Zatwierdzono — dodano do galerii produktu.' mod='qameraai' js=1}",
+        "netPublish": "{l s='Błąd sieci podczas publikacji.' mod='qameraai' js=1}",
+        "voteSaveFailed": "{l s='Nie udało się zapisać oceny.' mod='qameraai' js=1}",
+        "packshotRejectedDeleted": "{l s='Packshot odrzucony i usunięty.' mod='qameraai' js=1}",
+        "packshotRejected": "{l s='Packshot odrzucony.' mod='qameraai' js=1}",
+        "imageRejected": "{l s='Zdjęcie odrzucone.' mod='qameraai' js=1}",
+        "packshotAccepted": "{l s='Packshot zatwierdzony.' mod='qameraai' js=1}",
+        "rejected": "{l s='Odrzucono.' mod='qameraai' js=1}",
+        "netVote": "{l s='Błąd sieci podczas zapisu oceny.' mod='qameraai' js=1}",
+        "noPackshotRef": "{l s='Brak identyfikatora packshota do usunięcia.' mod='qameraai' js=1}",
+        "confirmDelete": "{l s='Usunąć ten packshot z katalogu Qamera AI? Tej operacji nie można cofnąć.' mod='qameraai' js=1}",
+        "deletePackshotFailed": "{l s='Nie udało się usunąć packshota.' mod='qameraai' js=1}",
+        "packshotDeleted": "{l s='Packshot usunięty.' mod='qameraai' js=1}",
+        "netDelete": "{l s='Błąd sieci podczas usuwania.' mod='qameraai' js=1}",
+        "badgeRejected": "{l s='Odrzucony' mod='qameraai' js=1}",
+        "badgePending": "{l s='Oczekuje' mod='qameraai' js=1}"
+    {rdelim}
+    </script>
+
     <h3 class="qamera-tab__title">{l s='Qamera AI' mod='qameraai'}</h3>
 
     {if !$qamera_has_key}

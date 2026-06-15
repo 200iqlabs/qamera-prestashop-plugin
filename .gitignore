@@ -25,3 +25,6 @@ tools/_shots/
 
 # PrestaShop generated module config cache (per-install, not source)
 qameraai/config_*.xml
+
+# Built distributable module package (reproducible via tools/build-zip.php)
+qameraai.zip

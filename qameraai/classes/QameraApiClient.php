@@ -355,7 +355,7 @@ class QameraApiClient
         if (!$this->hasKey()) {
             throw new QameraApiException(
                 'missing_api_key',
-                'Brak klucza API. Wklej klucz Qamera AI w ustawieniach modułu.'
+                self::tr('Brak klucza API. Wklej klucz Qamera AI w ustawieniach modułu.')
             );
         }
 
@@ -394,7 +394,7 @@ class QameraApiClient
         if ($errno !== 0) {
             throw new QameraApiException(
                 'transport_error',
-                'Nie można połączyć się z Qamera AI: ' . $error
+                self::tr('Nie można połączyć się z Qamera AI:') . ' ' . $error
             );
         }
 
@@ -424,7 +424,7 @@ class QameraApiClient
         if (!is_array($decoded)) {
             throw new QameraApiException(
                 'invalid_response',
-                'Nieprawidłowa odpowiedź z API Qamera AI.',
+                self::tr('Nieprawidłowa odpowiedź z API Qamera AI.'),
                 $status
             );
         }
@@ -448,14 +448,14 @@ class QameraApiClient
         if (!$this->hasKey()) {
             throw new QameraApiException(
                 'missing_api_key',
-                'Brak klucza API. Wklej klucz Qamera AI w ustawieniach modułu.'
+                self::tr('Brak klucza API. Wklej klucz Qamera AI w ustawieniach modułu.')
             );
         }
 
         if (!is_file($filePath) || !is_readable($filePath)) {
             throw new QameraApiException(
                 'invalid_input',
-                'Nie można odczytać pliku do wysłania.'
+                self::tr('Nie można odczytać pliku do wysłania.')
             );
         }
 
@@ -488,7 +488,7 @@ class QameraApiClient
         if ($errno !== 0) {
             throw new QameraApiException(
                 'transport_error',
-                'Nie można wysłać pliku do Qamera AI: ' . $error
+                self::tr('Nie można wysłać pliku do Qamera AI:') . ' ' . $error
             );
         }
 
@@ -512,12 +512,30 @@ class QameraApiClient
         if (!is_array($decoded)) {
             throw new QameraApiException(
                 'invalid_response',
-                'Nieprawidłowa odpowiedź z API Qamera AI.',
+                self::tr('Nieprawidłowa odpowiedź z API Qamera AI.'),
                 $status
             );
         }
 
         return $decoded;
+    }
+
+    /**
+     * Translate a client-side default message through the module translation
+     * domain when running inside PrestaShop. Falls back to the (Polish) source
+     * string when the class is used standalone (e.g. smoke-test scripts) so the
+     * client never fatals outside the shop runtime.
+     *
+     * @param string $string Source string (Polish).
+     * @return string
+     */
+    private static function tr($string)
+    {
+        if (class_exists('Translate')) {
+            return Translate::getModuleTranslation('qameraai', $string, 'qameraapiclient');
+        }
+
+        return $string;
     }
 
     /**
@@ -564,19 +582,19 @@ class QameraApiClient
         switch ($status) {
             case 401:
             case 403:
-                return 'Nieprawidłowy lub nieautoryzowany klucz API Qamera AI.';
+                return self::tr('Nieprawidłowy lub nieautoryzowany klucz API Qamera AI.');
             case 402:
-                return 'Brak kredytów na koncie Qamera AI.';
+                return self::tr('Brak kredytów na koncie Qamera AI.');
             case 404:
-                return 'Nie znaleziono zasobu w API Qamera AI.';
+                return self::tr('Nie znaleziono zasobu w API Qamera AI.');
             case 429:
-                return 'Zbyt wiele żądań do Qamera AI. Spróbuj ponownie za chwilę.';
+                return self::tr('Zbyt wiele żądań do Qamera AI. Spróbuj ponownie za chwilę.');
             default:
                 if ($status >= 500) {
-                    return 'Błąd serwera Qamera AI. Spróbuj ponownie później.';
+                    return self::tr('Błąd serwera Qamera AI. Spróbuj ponownie później.');
                 }
 
-                return 'Błąd komunikacji z API Qamera AI.';
+                return self::tr('Błąd komunikacji z API Qamera AI.');
         }
     }
 }

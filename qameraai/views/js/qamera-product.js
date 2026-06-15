@@ -16,6 +16,29 @@
     var POLL_INTERVAL_MS = 3000;
     var POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
+    // i18n: product-tab.tpl emits a JSON payload (#qamera-i18n) whose strings
+    // run through the PrestaShop translation domain, so the JS UI matches the
+    // server language (PL/EN). t() falls back to the Polish source when the
+    // payload is missing, so labels never render blank outside the shop runtime.
+    var I18N = {};
+    function loadI18n() {
+        try {
+            var node = document.getElementById('qamera-i18n');
+            if (node) {
+                I18N = JSON.parse(node.textContent || node.innerText || '{}') || {};
+            }
+        } catch (e) {
+            I18N = {};
+        }
+    }
+    function t(key, fallback) {
+        return (I18N[key] !== undefined && I18N[key] !== '') ? I18N[key] : fallback;
+    }
+    /** Substitute the single %s placeholder in a translated template. */
+    function fmt(str, value) {
+        return String(str).replace('%s', value);
+    }
+
     function init() {
         var root = document.getElementById('qamera-product-tab');
         if (!root) {
@@ -28,6 +51,7 @@
             return;
         }
         root.setAttribute('data-qamera-init', '1');
+        loadI18n();
 
         var ctx = {
             idProduct: parseInt(root.getAttribute('data-id-product'), 10) || 0,
@@ -129,13 +153,13 @@
         var imgUrl = galImg ? galImg.getAttribute('src') : '';
 
         target.disabled = true;
-        setStatus(root, asPackshot ? 'Dodawanie jako packshot…' : 'Dodawanie jako zdjęcie produktu…', 'busy');
+        setStatus(root, asPackshot ? t('addingPackshot', 'Dodawanie jako packshot…') : t('addingImage', 'Dodawanie jako zdjęcie produktu…'), 'busy');
 
         var action = asPackshot ? 'registerPackshot' : 'registerImage';
         postForm(actionUrl(ctx, action), formData({ id_product: ctx.idProduct, id_image: idImage })).then(function (res) {
             if (!res || !res.ok) {
                 target.disabled = false;
-                setStatus(root, (res && res.error) ? res.error : 'Nie udało się dodać zdjęcia.', 'error');
+                setStatus(root, (res && res.error) ? res.error : t('addFailed', 'Nie udało się dodać zdjęcia.'), 'error');
                 return;
             }
             updateGalleryItem(root, idImage, asPackshot);
@@ -151,12 +175,12 @@
             });
             setStatus(
                 root,
-                asPackshot ? 'Dodano jako packshot.' : 'Dodano jako zdjęcie produktu — możesz wygenerować packshot poniżej.',
+                asPackshot ? t('addedPackshot', 'Dodano jako packshot.') : t('addedImage', 'Dodano jako zdjęcie produktu — możesz wygenerować packshot poniżej.'),
                 'success'
             );
         }).catch(function () {
             target.disabled = false;
-            setStatus(root, 'Błąd sieci podczas dodawania.', 'error');
+            setStatus(root, t('netAdd', 'Błąd sieci podczas dodawania.'), 'error');
         });
     }
 
@@ -175,7 +199,7 @@
             if (!badges.querySelector('.' + cls)) {
                 var b = document.createElement('span');
                 b.className = 'qamera-badge ' + cls;
-                b.textContent = asPackshot ? 'packshot' : 'źródło';
+                b.textContent = asPackshot ? t('badgePackshotLower', 'packshot') : t('badgeSource', 'źródło');
                 badges.appendChild(b);
             }
         }
@@ -202,7 +226,7 @@
             photo.className = 'qamera-container__photo';
             var role = document.createElement('span');
             role.className = 'qamera-badge qamera-badge--role';
-            role.textContent = 'Zdjęcie';
+            role.textContent = t('labelPhoto', 'Zdjęcie');
             photo.appendChild(role);
             if (o.imgUrl) {
                 var im = document.createElement('img');
@@ -216,7 +240,7 @@
                 gen.className = 'qamera-btn qamera-btn--primary';
                 gen.setAttribute('data-action', 'generate-packshot');
                 gen.setAttribute('data-id-image', o.idImage);
-                gen.textContent = 'Generuj packshot';
+                gen.textContent = t('genPackshot', 'Generuj packshot');
                 photo.appendChild(gen);
             }
             container.appendChild(photo);
@@ -247,11 +271,11 @@
 
         var role = document.createElement('span');
         role.className = 'qamera-badge qamera-badge--role';
-        role.textContent = 'Packshot';
+        role.textContent = t('rolePackshot', 'Packshot');
         main.appendChild(role);
         var acc = document.createElement('span');
         acc.className = 'qamera-badge qamera-badge--accepted';
-        acc.textContent = 'Zatwierdzony';
+        acc.textContent = t('accepted', 'Zatwierdzony');
         main.appendChild(acc);
 
         if (imgUrl) {
@@ -271,13 +295,13 @@
         ses.className = 'qamera-btn qamera-btn--primary';
         ses.setAttribute('data-action', 'generate-session');
         ses.setAttribute('data-packshot-asset-id', assetId || '');
-        ses.textContent = 'Generuj sesję';
+        ses.textContent = t('genSession', 'Generuj sesję');
         var del = document.createElement('button');
         del.type = 'button';
         del.className = 'qamera-btn qamera-btn--delete';
         del.setAttribute('data-action', 'delete-packshot');
         del.setAttribute('data-packshot-ref', ref || '');
-        del.textContent = 'Usuń';
+        del.textContent = t('delete', 'Usuń');
         actions.appendChild(ses);
         actions.appendChild(del);
         main.appendChild(actions);
@@ -330,8 +354,8 @@
         setStatus(
             root,
             attempt === 0
-                ? 'Przygotowanie zdjęcia źródłowego…'
-                : 'Analiza zdjęcia źródłowego… (próba ' + (attempt + 1) + ')',
+                ? t('prepSource', 'Przygotowanie zdjęcia źródłowego…')
+                : fmt(t('analyzing', 'Analiza zdjęcia źródłowego… (próba %s)'), attempt + 1),
             'busy'
         );
 
@@ -343,15 +367,15 @@
                 return;
             }
             if (!res || !res.ok) {
-                setStatus(root, (res && res.error) ? res.error : 'Nie udało się rozpocząć generacji.', 'error');
+                setStatus(root, (res && res.error) ? res.error : t('genStartFailed', 'Nie udało się rozpocząć generacji.'), 'error');
                 removeTile(ph);
                 btn.disabled = false;
                 return;
             }
-            setStatus(root, 'Generowanie packshotu… (to może potrwać do kilku minut)', 'busy');
+            setStatus(root, t('genPackshotBusy', 'Generowanie packshotu… (to może potrwać do kilku minut)'), 'busy');
             pollJob(root, ctx, res.job_id, btn, res.packshot_external_ref || '', ph);
         }).catch(function () {
-            setStatus(root, 'Błąd sieci podczas wysyłki. Spróbuj ponownie.', 'error');
+            setStatus(root, t('netUpload', 'Błąd sieci podczas wysyłki. Spróbuj ponownie.'), 'error');
             removeTile(ph);
             btn.disabled = false;
         });
@@ -366,32 +390,32 @@
         poll(fetchJob, null, function (job) {
             btn.disabled = false;
             if (!job || !job.ok) {
-                setStatus(root, (job && job.error) ? job.error : 'Nie udało się odczytać statusu zadania.', 'error');
+                setStatus(root, (job && job.error) ? job.error : t('jobStatusFailed', 'Nie udało się odczytać statusu zadania.'), 'error');
                 removeTile(ph);
                 return;
             }
             if (job.status === 'completed') {
-                setStatus(root, 'Packshot gotowy.', 'success');
+                setStatus(root, t('packshotReady', 'Packshot gotowy.'), 'success');
                 fillPackshotTile(ph, job, packshotRef);
             } else if (job.status === 'failed' || job.status === 'expired') {
-                setStatus(root, job.error ? ('Generacja nie powiodła się: ' + job.error) : 'Generacja nie powiodła się.', 'error');
+                setStatus(root, job.error ? fmt(t('genFailedWith', 'Generacja nie powiodła się: %s'), job.error) : t('genFailed', 'Generacja nie powiodła się.'), 'error');
                 removeTile(ph);
             } else if (job.status === 'cancelled') {
-                setStatus(root, 'Generacja anulowana.', 'error');
+                setStatus(root, t('genCancelled', 'Generacja anulowana.'), 'error');
                 removeTile(ph);
             } else {
-                setStatus(root, 'Zadanie zakończone w stanie: ' + (job.status || '—'), 'error');
+                setStatus(root, fmt(t('jobEndedState', 'Zadanie zakończone w stanie: %s'), job.status || '—'), 'error');
                 removeTile(ph);
             }
         }, function (err) {
             btn.disabled = false;
             removeTile(ph);
             if (err && err.message === 'poll_timeout') {
-                setStatus(root, 'Przekroczono limit oczekiwania (5 min). Odśwież stronę, aby sprawdzić wynik.', 'error');
+                setStatus(root, t('pollTimeout5', 'Przekroczono limit oczekiwania (5 min). Odśwież stronę, aby sprawdzić wynik.'), 'error');
             } else if (err && err.payload && err.payload.error) {
                 setStatus(root, err.payload.error, 'error');
             } else {
-                setStatus(root, 'Błąd podczas sprawdzania statusu.', 'error');
+                setStatus(root, t('statusCheckErr', 'Błąd podczas sprawdzania statusu.'), 'error');
             }
         });
     }
@@ -408,7 +432,7 @@
 
         var roleBadge = document.createElement('span');
         roleBadge.className = 'qamera-badge qamera-badge--role';
-        roleBadge.textContent = 'Packshot';
+        roleBadge.textContent = t('rolePackshot', 'Packshot');
         main.appendChild(roleBadge);
 
         var box = document.createElement('div');
@@ -440,7 +464,7 @@
 
         var roleBadge = document.createElement('span');
         roleBadge.className = 'qamera-badge qamera-badge--role';
-        roleBadge.textContent = 'Packshot';
+        roleBadge.textContent = t('rolePackshot', 'Packshot');
         main.appendChild(roleBadge);
 
         if (job.url) {
@@ -463,14 +487,14 @@
         acceptBtn.className = 'qamera-btn qamera-btn--accept';
         acceptBtn.setAttribute('data-vote', 'accept');
         acceptBtn.setAttribute('data-job-id', job.job_id || '');
-        acceptBtn.textContent = 'Zatwierdź';
+        acceptBtn.textContent = t('accept', 'Zatwierdź');
 
         var rejectBtn = document.createElement('button');
         rejectBtn.type = 'button';
         rejectBtn.className = 'qamera-btn qamera-btn--reject';
         rejectBtn.setAttribute('data-vote', 'reject');
         rejectBtn.setAttribute('data-job-id', job.job_id || '');
-        rejectBtn.textContent = 'Odrzuć';
+        rejectBtn.textContent = t('reject', 'Odrzuć');
 
         actions.appendChild(acceptBtn);
         actions.appendChild(rejectBtn);
@@ -482,7 +506,7 @@
             delBtn.className = 'qamera-btn qamera-btn--delete';
             delBtn.setAttribute('data-action', 'delete-packshot');
             delBtn.setAttribute('data-packshot-ref', packshotRef);
-            delBtn.textContent = 'Usuń';
+            delBtn.textContent = t('delete', 'Usuń');
             actions.appendChild(delBtn);
         }
 
@@ -513,7 +537,7 @@
         });
 
         target.disabled = true;
-        setStatus(root, 'Zlecanie sesji…', 'busy');
+        setStatus(root, t('sessionAssign', 'Zlecanie sesji…'), 'busy');
 
         // N placeholders appear immediately (one per requested image).
         var outputs = ensureSessionOutputs(fig);
@@ -526,7 +550,7 @@
 
         postForm(actionUrl(ctx, 'generateSession'), fd).then(function (res) {
             if (!res || !res.ok) {
-                setStatus(root, (res && res.error) ? res.error : 'Nie udało się zlecić sesji.', 'error');
+                setStatus(root, (res && res.error) ? res.error : t('sessionStartFailed', 'Nie udało się zlecić sesji.'), 'error');
                 tiles.forEach(removeTile);
                 target.disabled = false;
                 return;
@@ -536,13 +560,13 @@
             while (tiles.length > jobIds.length) { removeTile(tiles.pop()); }
             while (tiles.length < jobIds.length && outputs) { tiles.push(addSessionPlaceholder(outputs)); }
 
-            setStatus(root, 'Generowanie sesji… (to może potrwać do kilku minut)', 'busy');
+            setStatus(root, t('sessionBusy', 'Generowanie sesji… (to może potrwać do kilku minut)'), 'busy');
             jobIds.forEach(function (jobId, idx) {
                 pollSessionJob(root, ctx, jobId, tiles[idx] || null);
             });
             target.disabled = false;
         }).catch(function () {
-            setStatus(root, 'Błąd sieci podczas zlecania sesji.', 'error');
+            setStatus(root, t('netSession', 'Błąd sieci podczas zlecania sesji.'), 'error');
             tiles.forEach(removeTile);
             target.disabled = false;
         });
@@ -561,7 +585,7 @@
         sessions.className = 'qamera-sessions';
         var meta = document.createElement('span');
         meta.className = 'qamera-meta';
-        meta.textContent = 'Sesje';
+        meta.textContent = t('labelSessions', 'Sesje');
         sessions.appendChild(meta);
         outputs = document.createElement('div');
         outputs.className = 'qamera-session__outputs';
@@ -597,12 +621,12 @@
             if (job.status === 'completed') {
                 fillSessionTile(tile, job);
             } else {
-                markSessionFailed(tile, job.error || ('Stan: ' + (job.status || '—')));
+                markSessionFailed(tile, job.error || fmt(t('stateColon', 'Stan: %s'), job.status || '—'));
             }
         }, function (err) {
             var msg = (err && err.message === 'poll_timeout')
-                ? 'Przekroczono limit oczekiwania.'
-                : 'Błąd podczas sprawdzania statusu.';
+                ? t('pollTimeoutShort', 'Przekroczono limit oczekiwania.')
+                : t('statusCheckErr', 'Błąd podczas sprawdzania statusu.');
             markSessionFailed(tile, msg);
         });
     }
@@ -621,7 +645,7 @@
         tile.appendChild(box);
         var meta = document.createElement('span');
         meta.className = 'qamera-meta';
-        meta.textContent = msg || 'Nie powiodło się.';
+        meta.textContent = msg || t('failedShort', 'Nie powiodło się.');
         tile.appendChild(meta);
     }
 
@@ -657,14 +681,14 @@
         acceptBtn.className = 'qamera-btn qamera-btn--accept';
         acceptBtn.setAttribute('data-action', 'accept-session');
         acceptBtn.setAttribute('data-job-id', job.job_id || '');
-        acceptBtn.textContent = 'Zatwierdź';
+        acceptBtn.textContent = t('accept', 'Zatwierdź');
 
         var rejectBtn = document.createElement('button');
         rejectBtn.type = 'button';
         rejectBtn.className = 'qamera-btn qamera-btn--reject';
         rejectBtn.setAttribute('data-vote', 'reject');
         rejectBtn.setAttribute('data-job-id', job.job_id || '');
-        rejectBtn.textContent = 'Odrzuć';
+        rejectBtn.textContent = t('reject', 'Odrzuć');
 
         actions.appendChild(acceptBtn);
         actions.appendChild(rejectBtn);
@@ -679,12 +703,12 @@
         }
         var fig = target.closest ? target.closest('.qamera-output') : null;
         target.disabled = true;
-        setStatus(root, 'Publikowanie zdjęcia w galerii…', 'busy');
+        setStatus(root, t('publishing', 'Publikowanie zdjęcia w galerii…'), 'busy');
 
         postForm(actionUrl(ctx, 'acceptSession'), formData({ job_id: jobId, id_product: ctx.idProduct })).then(function (res) {
             if (!res || !res.ok) {
                 target.disabled = false;
-                setStatus(root, (res && res.error) ? res.error : 'Nie udało się opublikować zdjęcia.', 'error');
+                setStatus(root, (res && res.error) ? res.error : t('publishFailed', 'Nie udało się opublikować zdjęcia.'), 'error');
                 return;
             }
             if (fig) {
@@ -698,12 +722,12 @@
             }
             setStatus(
                 root,
-                res.duplicate ? 'Zdjęcie było już w galerii produktu.' : 'Zatwierdzono — dodano do galerii produktu.',
+                res.duplicate ? t('alreadyInGallery', 'Zdjęcie było już w galerii produktu.') : t('publishedOk', 'Zatwierdzono — dodano do galerii produktu.'),
                 'success'
             );
         }).catch(function () {
             target.disabled = false;
-            setStatus(root, 'Błąd sieci podczas publikacji.', 'error');
+            setStatus(root, t('netPublish', 'Błąd sieci podczas publikacji.'), 'error');
         });
     }
 
@@ -719,7 +743,7 @@
         // No asset id on a fresh tile — the server resolves the latest accepted
         // packshot for the product when packshot_asset_id is omitted.
         btn.setAttribute('data-packshot-asset-id', fig.getAttribute('data-asset-id') || '');
-        btn.textContent = 'Generuj sesję';
+        btn.textContent = t('genSession', 'Generuj sesję');
         var actions = fig.querySelector('.qamera-packshot__actions');
         if (actions && actions.parentNode) {
             actions.parentNode.insertBefore(btn, actions);
@@ -751,7 +775,7 @@
         postForm(actionUrl(ctx, action), formData({ job_id: jobId })).then(function (res) {
             if (!res || !res.ok) {
                 target.disabled = false;
-                setStatus(root, (res && res.error) ? res.error : 'Nie udało się zapisać oceny.', 'error');
+                setStatus(root, (res && res.error) ? res.error : t('voteSaveFailed', 'Nie udało się zapisać oceny.'), 'error');
                 return;
             }
 
@@ -761,14 +785,14 @@
                 if (ref) {
                     postForm(actionUrl(ctx, 'deletePackshot'), formData({ packshot_ref: ref })).then(function () {
                         removeTile(fig);
-                        setStatus(root, 'Packshot odrzucony i usunięty.', 'success');
+                        setStatus(root, t('packshotRejectedDeleted', 'Packshot odrzucony i usunięty.'), 'success');
                     }).catch(function () {
                         removeTile(fig);
-                        setStatus(root, 'Packshot odrzucony.', 'success');
+                        setStatus(root, t('packshotRejected', 'Packshot odrzucony.'), 'success');
                     });
                 } else {
                     removeTile(fig);
-                    setStatus(root, 'Packshot odrzucony.', 'success');
+                    setStatus(root, t('packshotRejected', 'Packshot odrzucony.'), 'success');
                 }
                 return;
             }
@@ -776,7 +800,7 @@
             // Rejecting a session image just discards the tile (never published).
             if (vote === 'reject' && isOutput) {
                 removeTile(fig);
-                setStatus(root, 'Zdjęcie odrzucone.', 'success');
+                setStatus(root, t('imageRejected', 'Zdjęcie odrzucone.'), 'success');
                 return;
             }
 
@@ -792,10 +816,10 @@
                 }
                 setStateBadge(fig, res.voting);
             }
-            setStatus(root, vote === 'accept' ? 'Packshot zatwierdzony.' : 'Odrzucono.', 'success');
+            setStatus(root, vote === 'accept' ? t('packshotAccepted', 'Packshot zatwierdzony.') : t('rejected', 'Odrzucono.'), 'success');
         }).catch(function () {
             target.disabled = false;
-            setStatus(root, 'Błąd sieci podczas zapisu oceny.', 'error');
+            setStatus(root, t('netVote', 'Błąd sieci podczas zapisu oceny.'), 'error');
         });
     }
 
@@ -804,31 +828,35 @@
         var ref = target.getAttribute('data-packshot-ref')
             || (fig ? fig.getAttribute('data-packshot-ref') || fig.getAttribute('data-packshot-id') : '');
         if (!ref) {
-            setStatus(root, 'Brak identyfikatora packshota do usunięcia.', 'error');
+            setStatus(root, t('noPackshotRef', 'Brak identyfikatora packshota do usunięcia.'), 'error');
             return;
         }
-        if (window.confirm('Usunąć ten packshot z katalogu Qamera AI? Tej operacji nie można cofnąć.')) {
+        if (window.confirm(t('confirmDelete', 'Usunąć ten packshot z katalogu Qamera AI? Tej operacji nie można cofnąć.'))) {
             target.disabled = true;
             postForm(actionUrl(ctx, 'deletePackshot'), formData({ packshot_ref: ref })).then(function (res) {
                 if (!res || !res.ok) {
                     target.disabled = false;
-                    setStatus(root, (res && res.error) ? res.error : 'Nie udało się usunąć packshota.', 'error');
+                    setStatus(root, (res && res.error) ? res.error : t('deletePackshotFailed', 'Nie udało się usunąć packshota.'), 'error');
                     return;
                 }
                 if (fig && fig.parentNode) {
                     fig.parentNode.removeChild(fig);
                 }
-                setStatus(root, 'Packshot usunięty.', 'success');
+                setStatus(root, t('packshotDeleted', 'Packshot usunięty.'), 'success');
             }).catch(function () {
                 target.disabled = false;
-                setStatus(root, 'Błąd sieci podczas usuwania.', 'error');
+                setStatus(root, t('netDelete', 'Błąd sieci podczas usuwania.'), 'error');
             });
         }
     }
 
     /** Swap the accepted/pending/rejected badge on a card to reflect a new vote. */
     function setStateBadge(fig, voting) {
-        var labels = { accepted: 'Zatwierdzony', rejected: 'Odrzucony', pending: 'Oczekuje' };
+        var labels = {
+            accepted: t('accepted', 'Zatwierdzony'),
+            rejected: t('badgeRejected', 'Odrzucony'),
+            pending: t('badgePending', 'Oczekuje')
+        };
         var classes = { accepted: 'accepted', rejected: 'rejected', pending: 'pending' };
         var badge = fig.querySelector('.qamera-badge--accepted, .qamera-badge--rejected, .qamera-badge--pending');
         if (!badge) {
@@ -842,7 +870,7 @@
             }
         }
         badge.className = 'qamera-badge qamera-badge--' + (classes[voting] || 'pending');
-        badge.textContent = labels[voting] || 'Oczekuje';
+        badge.textContent = labels[voting] || t('badgePending', 'Oczekuje');
     }
 
     /* ── lightbox (full-image preview) ─────────────────────────────────── */

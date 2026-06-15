@@ -38,6 +38,20 @@ class AdminQameraAjaxController extends ModuleAdminController
     }
 
     /**
+     * Translate a user-facing string through the module translation domain
+     * (translations/<iso>.php). ModuleAdminController::l() routes to the admin
+     * (core) domain, so module strings are resolved explicitly here instead —
+     * keeping every AJAX error message PL/EN-translatable.
+     *
+     * @param string $string Source string (Polish).
+     * @return string
+     */
+    private function t($string)
+    {
+        return Translate::getModuleTranslation('qameraai', $string, 'adminqameraajax');
+    }
+
+    /**
      * Build the API client from stored Configuration (same source as the module).
      *
      * @return QameraApiClient
@@ -108,12 +122,12 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
         }
 
         $idProduct = (int) Tools::getValue('id_product');
         if ($idProduct <= 0) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora produktu.')]);
         }
         $externalRef = $this->buildExternalRef($idProduct);
 
@@ -122,7 +136,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         // sessions. Style/count/model belong to the session, not the packshot.
         $aiModel = trim((string) Configuration::get('QAMERA_AI_MODEL'));
         if ($aiModel === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Skonfiguruj model AI w ustawieniach modułu Qamera AI przed generacją.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Skonfiguruj model AI w ustawieniach modułu Qamera AI przed generacją.')]);
         }
 
         // Source is an existing PrestaShop gallery image — never an upload to
@@ -130,14 +144,14 @@ class AdminQameraAjaxController extends ModuleAdminController
         $idImage = (int) Tools::getValue('id_image');
         $filePath = $this->localImagePath($idImage);
         if ($filePath === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Nie znaleziono pliku zdjęcia w galerii produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Nie znaleziono pliku zdjęcia w galerii produktu.')]);
         }
 
         // Dedup by SHA-256 of the gallery file: the asset_id is cached so the
         // same image is uploaded+registered only once.
         $sha = hash_file('sha256', $filePath);
         if ($sha === false || $sha === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Nie można odczytać pliku zdjęcia.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Nie można odczytać pliku zdjęcia.')]);
         }
 
         // For job_type=packshot the API requires packshot_asset_id to reference
@@ -155,13 +169,13 @@ class AdminQameraAjaxController extends ModuleAdminController
         // the generation worker may reject the job with PREPARE_PHOTOS_TIMEOUT.
         $analysis = $this->waitForDescribed($client, $externalRef, $assetId);
         if ($analysis === 'error') {
-            $this->json(['ok' => false, 'error' => $this->l('Analiza zdjęcia źródłowego nie powiodła się. Wgraj inne zdjęcie.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Analiza zdjęcia źródłowego nie powiodła się. Wgraj inne zdjęcie.')]);
         }
         if ($analysis !== 'described') {
             $this->json([
                 'ok' => false,
                 'code' => 'analysis_pending',
-                'error' => $this->l('Zdjęcie źródłowe jest wciąż analizowane. Spróbuj ponownie za chwilę.'),
+                'error' => $this->t('Zdjęcie źródłowe jest wciąż analizowane. Spróbuj ponownie za chwilę.'),
             ]);
         }
 
@@ -191,7 +205,7 @@ class AdminQameraAjaxController extends ModuleAdminController
 
         $jobId = $this->firstJobId($res);
         if ($jobId === '') {
-            $this->json(['ok' => false, 'error' => $this->l('API nie zwróciło identyfikatora zadania.')]);
+            $this->json(['ok' => false, 'error' => $this->t('API nie zwróciło identyfikatora zadania.')]);
         }
 
         $this->json([
@@ -216,18 +230,18 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
         }
 
         $idProduct = (int) Tools::getValue('id_product');
         if ($idProduct <= 0) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora produktu.')]);
         }
         $externalRef = $this->buildExternalRef($idProduct);
 
         $aiModel = trim((string) Configuration::get('QAMERA_AI_MODEL'));
         if ($aiModel === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Skonfiguruj model AI w ustawieniach modułu Qamera AI przed generacją.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Skonfiguruj model AI w ustawieniach modułu Qamera AI przed generacją.')]);
         }
 
         // images_count from the session panel. UI offers 1..10; clamp to that.
@@ -248,7 +262,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         if ($packshotAsset !== '' && $this->assertProductPackshot($client, $externalRef, $packshotAsset) === 'not_packshot') {
             $this->json([
                 'ok' => false,
-                'error' => $this->l('Sesję można zlecić tylko z packshotu (zatwierdzonego lub bezpośredniego), nie ze zdjęcia źródłowego.'),
+                'error' => $this->t('Sesję można zlecić tylko z packshotu (zatwierdzonego lub bezpośredniego), nie ze zdjęcia źródłowego.'),
             ]);
         }
 
@@ -274,7 +288,7 @@ class AdminQameraAjaxController extends ModuleAdminController
 
         $jobIds = $this->allJobIds($res);
         if (empty($jobIds)) {
-            $this->json(['ok' => false, 'error' => $this->l('API nie zwróciło zadań sesji.')]);
+            $this->json(['ok' => false, 'error' => $this->t('API nie zwróciło zadań sesji.')]);
         }
 
         $orderId = isset($res['order_id']) ? (string) $res['order_id'] : '';
@@ -454,7 +468,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         $upload = $client->upload_asset($filePath, basename($filePath), 'image/jpeg');
         $assetId = isset($upload['asset_id']) ? (string) $upload['asset_id'] : '';
         if ($assetId === '') {
-            throw new QameraApiException('invalid_response', $this->l('Upload nie zwrócił asset_id.'));
+            throw new QameraApiException('invalid_response', $this->t('Upload nie zwrócił asset_id.'));
         }
 
         Configuration::updateValue($cacheKey, $assetId);
@@ -494,24 +508,24 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API. Skonfiguruj moduł Qamera AI w ustawieniach.')]);
         }
 
         $idProduct = (int) Tools::getValue('id_product');
         if ($idProduct <= 0) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora produktu.')]);
         }
         $externalRef = $this->buildExternalRef($idProduct);
 
         $idImage = (int) Tools::getValue('id_image');
         $filePath = $this->localImagePath($idImage);
         if ($filePath === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Nie znaleziono pliku zdjęcia w galerii produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Nie znaleziono pliku zdjęcia w galerii produktu.')]);
         }
 
         $sha = hash_file('sha256', $filePath);
         if ($sha === false || $sha === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Nie można odczytać pliku zdjęcia.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Nie można odczytać pliku zdjęcia.')]);
         }
 
         try {
@@ -673,12 +687,12 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API.')]);
         }
 
         $jobId = trim((string) Tools::getValue('job_id'));
         if ($jobId === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora zadania.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora zadania.')]);
         }
 
         try {
@@ -730,16 +744,16 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API.')]);
         }
 
         $jobId = trim((string) Tools::getValue('job_id'));
         if ($jobId === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora zadania.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora zadania.')]);
         }
         $idProduct = (int) Tools::getValue('id_product');
         if ($idProduct <= 0) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora produktu.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora produktu.')]);
         }
 
         // Record the accept vote, then resolve the output to publish.
@@ -752,7 +766,7 @@ class AdminQameraAjaxController extends ModuleAdminController
 
         $url = $this->firstOutputUrl($job);
         if ($url === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Zatwierdzono, ale wynik nie ma jeszcze pliku do publikacji.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Zatwierdzono, ale wynik nie ma jeszcze pliku do publikacji.')]);
         }
 
         $import = $this->importOutputToGallery($idProduct, $jobId, $url);
@@ -783,7 +797,7 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $bytes = $this->downloadUrl($url);
         if ($bytes === '') {
-            return ['ok' => false, 'error' => $this->l('Nie udało się pobrać wygenerowanego zdjęcia.')];
+            return ['ok' => false, 'error' => $this->t('Nie udało się pobrać wygenerowanego zdjęcia.')];
         }
         $sha = hash('sha256', $bytes);
 
@@ -801,7 +815,7 @@ class AdminQameraAjaxController extends ModuleAdminController
                 @unlink($tmp);
             }
 
-            return ['ok' => false, 'error' => $this->l('Nie udało się zapisać pliku zdjęcia.')];
+            return ['ok' => false, 'error' => $this->t('Nie udało się zapisać pliku zdjęcia.')];
         }
 
         $image = new Image();
@@ -813,7 +827,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         if (!$image->add()) {
             @unlink($tmp);
 
-            return ['ok' => false, 'error' => $this->l('Nie udało się utworzyć obrazu produktu.')];
+            return ['ok' => false, 'error' => $this->t('Nie udało się utworzyć obrazu produktu.')];
         }
         // Associate to the current shop(s) so the image appears on the storefront.
         $image->associateTo(Shop::getContextListShopID());
@@ -823,7 +837,7 @@ class AdminQameraAjaxController extends ModuleAdminController
             $image->delete();
             @unlink($tmp);
 
-            return ['ok' => false, 'error' => $this->l('Nie udało się przetworzyć zdjęcia.')];
+            return ['ok' => false, 'error' => $this->t('Nie udało się przetworzyć zdjęcia.')];
         }
         // Generate the configured product image thumbnails (home/large/etc.).
         $types = ImageType::getImagesTypes('products');
@@ -890,12 +904,12 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API.')]);
         }
 
         $ref = trim((string) Tools::getValue('packshot_ref'));
         if ($ref === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora packshota.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora packshota.')]);
         }
 
         try {
@@ -922,12 +936,12 @@ class AdminQameraAjaxController extends ModuleAdminController
     {
         $client = $this->getApiClient();
         if (!$client->hasKey()) {
-            $this->json(['ok' => false, 'error' => $this->l('Brak klucza API.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak klucza API.')]);
         }
 
         $jobId = trim((string) Tools::getValue('job_id'));
         if ($jobId === '') {
-            $this->json(['ok' => false, 'error' => $this->l('Brak identyfikatora zadania.')]);
+            $this->json(['ok' => false, 'error' => $this->t('Brak identyfikatora zadania.')]);
         }
 
         try {
