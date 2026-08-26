@@ -220,6 +220,7 @@ kontener PS9 raz przestał przyjmować połączenia i wymagał restartu.
 | `qameraai/views/templates/hook/product-tab.tpl` | Dopisane `9:16` do listy proporcji sesji. |
 | wszystkie 16 plików PHP + `qameraai/LICENSE.md` | Nagłówek AFL-3.0 i pełny tekst licencji (sekcja 6). |
 | `qameraai/qameraai.php`, `qameraai/config.xml`, `qameraai/README.md`, oba pliki tłumaczeń | Metadane modułu na angielski, klucz tłumaczenia opisu przeliczony (sekcja 6). |
+| `qameraai/docs/` (przewodnik dla sklepikarza, HTML + PDF) + `tools/build-docs.js` | Pozycja z listy kontrolnej, której walidator nie sprawdza (sekcja 6). |
 | wszystkie 16 plików PHP | Standard kodu PrestaShopa — 14 plików miało odstępstwa, poprawione ich własnym narzędziem (sekcja 6). |
 | `qameraai/.htaccess`, 4 pliki `js`/`css`/`tpl`, `views/templates/admin/account-status.tpl`, `AdminQameraAjaxController.php`, `qameraai.php`, `.php-cs-fixer.dist.php` | Wszystkie uwagi z raportu walidatora PrestaShopa (sekcja 6). |
 
@@ -232,13 +233,14 @@ przechodzą. Na żywo: `GET /jobs/{id}` dla zadania w stanie `retry_pending` z n
 
 ## 5. Pakiet dystrybucyjny
 
-`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **26 plików**
-(kod modułu + `LICENSE.md` + `.htaccess` + nowy szablon panelu konta). Wszystkie wpisy
-zaczynają się od `qameraai/`.
-Wykluczone: `config_pl.xml`.
+`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **29 plików**
+(kod modułu + `LICENSE.md` + `.htaccess` + szablon panelu konta + dokumentacja dla
+sklepikarza). Wszystkie wpisy zaczynają się od `qameraai/`. Wykluczone: `config_pl.xml`.
 
-Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `docs/`, `prd.md`, `goals.md`,
-`.env*`, `docker-compose.yml`, `Makefile`, `smoke/`, `.git`.
+Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `prd.md`, `goals.md`, `.env*`,
+`docker-compose.yml`, `Makefile`, `smoke/`, `.git` — oraz `docs/` **tego repozytorium**,
+czyli ten raport. Nie mylić z `qameraai/docs/`, katalogiem wewnątrz modułu, którego lista
+kontrolna PrestaShopa wprost wymaga i który w pakiecie **jest**.
 
 ---
 
@@ -287,11 +289,16 @@ w `config.xml`, `qameraai/README.md`. Klucz tłumaczenia opisu przeliczony w obu
 | Brak | Waga |
 |---|---|
 | **Brak `logo.png`** w katalogu modułu | wymagane przez Addons; to decyzja graficzna, nie mechaniczna poprawka |
-| **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji — wartość pochodzi z konta Addons, które nie istnieje |
-| **Brak `docs/`** wewnątrz modułu (lista kontrolna oczekuje dokumentacji tam, najlepiej PDF) | zgłaszane przy walidacji ręcznej |
+| **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji — wartość pochodzi z konta Addons |
 
-Żadnej z tych trzech walidator nie zgłosił — wychodzą przy przeglądzie ręcznym albo dopiero
+Żadnej z tych dwóch walidator nie zgłosił — wychodzą przy przeglądzie ręcznym albo dopiero
 przy samym zgłoszeniu, więc lista zostaje otwarta mimo czystego raportu.
+
+**Dokumentacja w `qameraai/docs/` — dopisana w tej sesji.** Przewodnik dla sklepikarza:
+co moduł robi, co trzeba mieć przed startem, instalacja, sześć kroków generacji, kredyty,
+tabela komunikatów błędów, świadome granice wersji, dane i prywatność, wsparcie. Źródło
+trzymane jako HTML obok, PDF (format zalecany przez listę kontrolną) generowany z niego
+przez `tools/build-docs.js`, żeby treść dało się utrzymywać i porównywać w repo.
 
 ### `ps_versions_compliancy`
 
@@ -313,6 +320,15 @@ przy zgłoszeniu, a stało się warunkiem, żeby cokolwiek sprawdzić.**
 
 Raport w oryginale leży obok: [`walidator-prestashop-2026-08-26.txt`](walidator-prestashop-2026-08-26.txt).
 Wypisał **cztery grupy uwag. Wszystkie poprawione**, żadna nie została odrzucona.
+
+> **Drugie przejście: „Validation passed".** Paweł przepuścił przebudowaną paczkę przez
+> walidator po poprawkach — zielono, zero uwag. Wynik zgłoszony przez niego, nie widziany
+> przeze mnie; drugiego raportu nie mam w repo.
+>
+> To zamyka **automatyczną** część walidacji technicznej. Nie zamyka całej: PrestaShop robi
+> jeszcze przegląd ręczny (instalacja, konfiguracja, lektura kodu przez ich dewelopera),
+> a `logo.png`, `module_key` i dokumentacja w `docs/` modułu nadal brakują — walidator ich
+> nie sprawdza.
 
 | Uwaga walidatora | Ile | Co zrobiono |
 |---|---|---|
@@ -365,8 +381,8 @@ PHPStan dla modułów. Uruchomione lokalnie, bez konta.
 
 ## 7. Otwarte
 
-- Ponowne przepuszczenie paczki przez walidator po poprawkach (potrzebne konto sprzedawcy).
-- `logo.png`, `module_key`, `docs/` wewnątrz modułu.
+- Przegląd ręczny po stronie PrestaShopa (instalacja, konfiguracja, lektura kodu) — walidator automatyczny przeszedł, to jest osobny etap.
+- `logo.png` i `module_key` — oba po stronie konta sprzedawcy.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy
   większym ruchu.
