@@ -1,4 +1,18 @@
 {*
+ * Copyright since 2026 200IQ Labs and Contributors
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License 3.0 (AFL-3.0)
+ * that is bundled with this package in the file LICENSE.md.
+ * It is also available through the world-wide-web at this URL:
+ * https://opensource.org/licenses/AFL-3.0
+ *
+ * @author    Qamera AI
+ * @copyright Since 2026 200IQ Labs
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
+ *}
+{*
  * Qamera AI — single packshot card with its sessions.
  * Approval/role derived from API voting: accepted | pending | rejected.
  * $packshot is passed in by the including template.

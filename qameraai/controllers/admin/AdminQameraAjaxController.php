@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -103,7 +102,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      *
      * @param array $payload
      *
-     * @return void
+     * @return never
      */
     private function json(array $payload)
     {
@@ -117,7 +116,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      *
      * @param QameraApiException $e
      *
-     * @return void
+     * @return never
      */
     private function apiError(QameraApiException $e)
     {
@@ -169,7 +168,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         // Dedup by SHA-256 of the gallery file: the asset_id is cached so the
         // same image is uploaded+registered only once.
         $sha = hash_file('sha256', $filePath);
-        if ($sha === false || $sha === '') {
+        if ($sha === false) {
             $this->json(['ok' => false, 'error' => $this->t('Nie można odczytać pliku zdjęcia.')]);
         }
 
@@ -552,7 +551,7 @@ class AdminQameraAjaxController extends ModuleAdminController
         }
 
         $sha = hash_file('sha256', $filePath);
-        if ($sha === false || $sha === '') {
+        if ($sha === false) {
             $this->json(['ok' => false, 'error' => $this->t('Nie można odczytać pliku zdjęcia.')]);
         }
 

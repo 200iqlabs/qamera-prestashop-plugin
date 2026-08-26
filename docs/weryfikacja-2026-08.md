@@ -221,6 +221,7 @@ kontener PS9 raz przestał przyjmować połączenia i wymagał restartu.
 | wszystkie 16 plików PHP + `qameraai/LICENSE.md` | Nagłówek AFL-3.0 i pełny tekst licencji (sekcja 6). |
 | `qameraai/qameraai.php`, `qameraai/config.xml`, `qameraai/README.md`, oba pliki tłumaczeń | Metadane modułu na angielski, klucz tłumaczenia opisu przeliczony (sekcja 6). |
 | wszystkie 16 plików PHP | Standard kodu PrestaShopa — 14 plików miało odstępstwa, poprawione ich własnym narzędziem (sekcja 6). |
+| `qameraai/.htaccess`, 4 pliki `js`/`css`/`tpl`, `views/templates/admin/account-status.tpl`, `AdminQameraAjaxController.php`, `qameraai.php`, `.php-cs-fixer.dist.php` | Wszystkie uwagi z raportu walidatora PrestaShopa (sekcja 6). |
 
 Weryfikacja poprawki koperty: osiem przypadków (job z błędem na 200, job bez błędu, koperta
 na 401/404/500, samotny obiekt `error` na 200, zwykły payload, puste ciało) — wszystkie
@@ -231,8 +232,9 @@ przechodzą. Na żywo: `GET /jobs/{id}` dla zadania w stanie `retry_pending` z n
 
 ## 5. Pakiet dystrybucyjny
 
-`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **23 pliki**
-(22 + `LICENSE.md`). Wszystkie wpisy zaczynają się od `qameraai/`.
+`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **26 plików**
+(kod modułu + `LICENSE.md` + `.htaccess` + nowy szablon panelu konta). Wszystkie wpisy
+zaczynają się od `qameraai/`.
 Wykluczone: `config_pl.xml`.
 
 Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `docs/`, `prd.md`, `goals.md`,
@@ -288,6 +290,9 @@ w `config.xml`, `qameraai/README.md`. Klucz tłumaczenia opisu przeliczony w obu
 | **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji — wartość pochodzi z konta Addons, które nie istnieje |
 | **Brak `docs/`** wewnątrz modułu (lista kontrolna oczekuje dokumentacji tam, najlepiej PDF) | zgłaszane przy walidacji ręcznej |
 
+Żadnej z tych trzech walidator nie zgłosił — wychodzą przy przeglądzie ręcznym albo dopiero
+przy samym zgłoszeniu, więc lista zostaje otwarta mimo czystego raportu.
+
 ### `ps_versions_compliancy`
 
 Zadeklarowane `8.0.0` – `9.99.99`. Dolna granica ma pokrycie: generacja na PS 8.x w czerwcu
@@ -297,21 +302,46 @@ PrestaShopowa i nie wywoła błędu walidatora, ale jest deklaracją na przyszł
 a nie stwierdzeniem faktu. Zostawiam bez zmiany — obniżanie górnej granicy przy każdym
 wydaniu 9.x oznaczałoby wypuszczanie aktualizacji modułu tylko po to, żeby ją podnieść.
 
-### Walidator PrestaShop — **nie da się uruchomić bez konta sprzedawcy**
+### Walidator PrestaShop — raport z 2026-08-26 i co z niego wynikło
 
-Próba wykonana, wynik negatywny i wart zapisania, bo zmienia plan wydania.
+`validator.prestashop.com` **nie ma już anonimowego wgrywania**: `/` i `/module` przekierowują
+na `/auth/login` („Use your existing seller account to log in and use the Validator"),
+`/validator`, `/upload` i `/search` dają 404, publiczne zostają tylko `/documentation`,
+`/changelog` i `/generator` — żadne bez pola na plik. Paczkę wgrał więc Paweł ze swojego
+konta i przekazał raport. **Wniosek na przyszłość: konto sprzedawcy przestało być krokiem
+przy zgłoszeniu, a stało się warunkiem, żeby cokolwiek sprawdzić.**
 
-`validator.prestashop.com` **nie ma już anonimowego wgrywania**. Strona główna przekierowuje
-na `/auth/login` z jednym przyciskiem „Continue with PrestaShop Account" i zdaniem
-„Use your existing seller account to log in and use the Validator". Sprawdzone ścieżki:
-`/` i `/module` → przekierowanie na logowanie; `/validator`, `/upload`, `/search` → 404;
-publiczne zostają tylko `/documentation`, `/changelog` i `/generator`, i żadna z nich nie ma
-pola na plik. Droga przez publiczne repozytorium GitHub jest za tym samym logowaniem, a nasze
-repozytorium i tak jest prywatne.
+Raport w oryginale leży obok: [`walidator-prestashop-2026-08-26.txt`](walidator-prestashop-2026-08-26.txt).
+Wypisał **cztery grupy uwag. Wszystkie poprawione**, żadna nie została odrzucona.
 
-Konto sprzedawcy jest poza zakresem tego zlecenia (wyraźny zakaz zakładania), więc walidator
-**nie został uruchomiony**. To jedyna pozycja z Fazy B, której nie dało się domknąć od tej
-strony — potrzeba człowieka z kontem PrestaShop Account.
+| Uwaga walidatora | Ile | Co zrobiono |
+|---|---|---|
+| Brak `.htaccess` w katalogu modułu (ochrona przed listowaniem plików) | 1 | Dołożony plik, którego PrestaShop używa we własnych modułach (`ps_checkout`). Sprawdzone na żywo: CSS i JS modułu nadal 200, kod PHP i listing katalogu 403. |
+| „There must be no blank lines before the file comment" | 11 plików | Pusta linia usunięta — we wszystkich 16, nie tylko w zgłoszonych 11. |
+| „Missing license header" na plikach nie-PHP | 3 pliki | Nagłówek AFL-3.0 dopisany do `qamera-product.js`, `product-tab.tpl` i `_packshot.tpl` (w Smarty jako `{* … *}`), a dla spójności też do `qamera-admin.css`, którego raport nie wymienił. |
+| „The use of smarty templates is mandatory to display HTML" | 1 miejsce | Panel statusu konta na stronie ustawień przeniesiony z konkatenacji w PHP do `views/templates/admin/account-status.tpl`; `htmlspecialchars` zastąpione filtrem Smarty, klucze tłumaczeń przeniesione do domeny nowego szablonu. |
+
+Plus siedem uwag w sekcji „Compatibility" (analiza statyczna), również **wszystkie zamknięte**:
+
+| Uwaga | Co to naprawdę było |
+|---|---|
+| `$sha === ''` zawsze fałszywe (2 miejsca) | `hash_file()` zwraca łańcuch albo `false`, nigdy pustego — martwa gałąź, usunięta. |
+| `$assetId` / `$res` / `$job` „mogą być niezdefiniowane" (8 miejsc) | Fałszywy alarm z brakującej adnotacji: `json()` kończy się `exit`, więc po błędzie API kod nigdy nie leci dalej. Analizator nie miał jak tego wiedzieć — `json()` i `apiError()` dostały `@return never`. |
+| `TabCore::$active` nie przyjmuje `int` | `$tab->active = 1` → `true`. |
+| „Right side of && is always true" | `uninstallDb()` liczyło wynik na zmiennej ustawionej linijkę wyżej na `true`. Rozpisane na dwa wyniki — i przy okazji obie tabele są teraz kasowane niezależnie, zamiast drugiej pod warunkiem pierwszej. |
+| Offsety `registered` i `truncated` nie istnieją | **Adnotacja rozjechała się z kodem**: `buildProductView()` od dawna zwraca oba pola, a docblock ich nie wymieniał. Poprawiony docblock, nie kod. |
+
+Po poprawkach sprawdzone na żywo, bo zmiana szablonu to zmiana zachowania, nie kosmetyka:
+strona ustawień renderuje panel konta z prawdziwymi danymi (`Konto: PL`, plan, saldo 6130),
+bez wycieku surowego znacznika i bez nieprzetłumaczonego Smarty'ego; zakładka na karcie
+produktu nadal się renderuje i odtwarza stan z API; składnia czysta na PHP 7.4 i 8.1;
+nagłówek licencyjny na każdym pliku `php`/`js`/`css`/`tpl`; `index.php` w każdym katalogu,
+łącznie z nowym.
+
+**Konflikt dwóch narzędzi PrestaShopa, wart zapamiętania.** Ich formater wstawia pustą linię
+po `<?php`, a ich walidator za to samo odrzuca plik. Własne moduły PrestaShopa idą za
+walidatorem. Repozytorium ma więc teraz `.php-cs-fixer.dist.php`, który bierze ich zestaw
+reguł i wyłącza tę jedną — inaczej pierwsze uruchomienie formatera przywróciłoby 11 uwag.
 
 ### Zamiast walidatora: standard kodu, który PrestaShop publikuje
 
@@ -335,7 +365,7 @@ PHPStan dla modułów. Uruchomione lokalnie, bez konta.
 
 ## 7. Otwarte
 
-- Walidator PrestaShop — wymaga konta sprzedawcy (PrestaShop Account), którego nie wolno mi zakładać. Pozycja dla człowieka.
+- Ponowne przepuszczenie paczki przez walidator po poprawkach (potrzebne konto sprzedawcy).
 - `logo.png`, `module_key`, `docs/` wewnątrz modułu.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy

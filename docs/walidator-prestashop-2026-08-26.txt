@@ -1,0 +1,206 @@
+Qamera AI for PrestaShop - Validation report
+-------
+
+Addon details
+-------------
+
+Validation date: 2026-08-26
+Addon type: Module
+Technical name: qameraai
+Display name: Qamera AI for PrestaShop
+Author: Qamera AI
+Version: 1.0.0
+Category (tab): administration
+Description: Generate Qamera AI packshots and product sessions from the product page and publ
+ish approved results in the gallery.
+
+
+Security
+-------------
+
+To prevent someone from listing the files of the module, an .htaccess file must be present in the root folder.
+* /.htaccess
+
+Licenses
+-------------
+
+In file /qameraai.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /views/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /views/templates/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /views/templates/hook/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /classes/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /classes/QameraApiClient.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /classes/QameraCatalogCache.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /controllers/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /controllers/admin/index.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+In file /controllers/admin/AdminQameraAjaxController.php:
+ * There must be no blank lines before the file comment
+
+Line	| Code
+--------| ------------------------------------------------------
+1	| <?php
+
+
+Missing license header
+* /views/js/qamera-product.js
+* /views/templates/hook/product-tab.tpl
+* /views/templates/hook/_packshot.tpl
+
+Optimizations
+-------------
+
+In file /qameraai.php:
+ * The use of smarty templates is mandatory to display HTML. Your PHP code should not contain HTML.
+
+Line	| Code
+--------| ------------------------------------------------------
+331	|         $html = '<div class="panel">'
+332	|             . '<h3><i class="icon icon-qrcode"></i> ' . $this->l('Konto Qamera AI') . '</h3>'
+333	|             . '<p><strong>' . $this->l('Konto:') . '</strong> ' . htmlspecialchars($account, ENT_QUOTES, 'UTF-8') . '</p>'
+334	|             . '<p><strong>' . $this->l('Plan:') . '</strong> ' . htmlspecialchars($plan, ENT_QUOTES, 'UTF-8') . '</p>'
+335	|             . '<p><strong>' . $this->l('Saldo kredytów:') . '</strong> ' . htmlspecialchars($credits, ENT_QUOTES, 'UTF-8') . '</p>'
+
+
+Compatibility
+-------------
+
+In file /controllers/admin/AdminQameraAjaxController.php:
+ * Strict comparison using === between lowercase-string&amp;non-falsy-string and &#039;&#039; will always evaluate to false.
+
+Line	| Code
+--------| ------------------------------------------------------
+172	|         if ($sha === false || $sha === '') {
+	| [...]
+555	|         if ($sha === false || $sha === '') {
+
+
+ * Variable $assetId might not be defined.
+
+Line	| Code
+--------| ------------------------------------------------------
+189	|         $analysis = $this->waitForDescribed($client, $externalRef, $assetId);
+	| [...]
+210	|             'packshot_asset_id' => $assetId,
+	| [...]
+568	|             'asset_id' => $assetId,
+
+
+ * Variable $res might not be defined.
+
+Line	| Code
+--------| ------------------------------------------------------
+225	|         $jobId = $this->firstJobId($res);
+	| [...]
+308	|         $jobIds = $this->allJobIds($res);
+
+
+ * Variable $job might not be defined.
+
+Line	| Code
+--------| ------------------------------------------------------
+740	|             'url' => $this->firstOutputUrl($job),
+741	|             'error' => $this->jobErrorMessage($job),
+	| [...]
+798	|         $url = $this->firstOutputUrl($job);
+
+
+In file /qameraai.php:
+ * Property TabCore::$active (bool) does not accept int.
+
+Line	| Code
+--------| ------------------------------------------------------
+112	|         $tab->active = 1;
+
+
+ * Right side of &amp;&amp; is always true.
+
+Line	| Code
+--------| ------------------------------------------------------
+194	|         $ok = Db::getInstance()->execute('DROP TABLE IF EXISTS `' . $prefix . 'qamera_import`') && $ok;
+
+
+ * Offset &#039;registered&#039; does not exist on array{containers: array, standalone: array, is_empty: bool, error: string}.
+
+Line	| Code
+--------| ------------------------------------------------------
+592	|             $assign['qamera_gallery'] = $this->loadGalleryImages($idProduct, $view['registered'], $this->importedImageIds($idProduct));
+
+
+ * Offset &#039;truncated&#039; does not exist on array{containers: array, standalone: array, is_empty: bool, error: string}.
+
+Line	| Code
+--------| ------------------------------------------------------
+597	|             $assign['qamera_truncated'] = $view['truncated'];
+
+

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -24,10 +23,10 @@ $_MODULE['<{qameraai}prestashop>qameraai_d2bfe39764a51af95714563ec4c0e40a'] = 'N
 $_MODULE['<{qameraai}prestashop>qameraai_69f009fd0b34fca26e218265c23afd8e'] = 'No API key. Paste your Qamera AI key below to see account status and credit balance.';
 $_MODULE['<{qameraai}prestashop>qameraai_25b1a7707fa185570775ad262a476335'] = 'Could not fetch account status:';
 $_MODULE['<{qameraai}prestashop>qameraai_8eaf58017a29810910eb2814cffb8a0f'] = 'none (pay-as-you-go)';
-$_MODULE['<{qameraai}prestashop>qameraai_10b657ea81a6cab71e67eb8782c105f8'] = 'Qamera AI account';
-$_MODULE['<{qameraai}prestashop>qameraai_0dbbc37c1bce52ffdfc19aa981538d4c'] = 'Account:';
-$_MODULE['<{qameraai}prestashop>qameraai_6ba41f2a510daab21fa4ef6f3f946b52'] = 'Plan:';
-$_MODULE['<{qameraai}prestashop>qameraai_d32738b3ab78bbd5272d7202f6f45aca'] = 'Credit balance:';
+$_MODULE['<{qameraai}prestashop>account-status_10b657ea81a6cab71e67eb8782c105f8'] = 'Qamera AI account';
+$_MODULE['<{qameraai}prestashop>account-status_0dbbc37c1bce52ffdfc19aa981538d4c'] = 'Account:';
+$_MODULE['<{qameraai}prestashop>account-status_6ba41f2a510daab21fa4ef6f3f946b52'] = 'Plan:';
+$_MODULE['<{qameraai}prestashop>account-status_d32738b3ab78bbd5272d7202f6f45aca'] = 'Credit balance:';
 $_MODULE['<{qameraai}prestashop>qameraai_4ee67b92afce4fdd6b3aa772ab055869'] = 'API key';
 $_MODULE['<{qameraai}prestashop>qameraai_4bac96b65c32d57b47d7c9c56bcb9b4e'] = 'Format: mk_live_<keyId>.<secret>. The key is stored in the shop configuration.';
 $_MODULE['<{qameraai}prestashop>qameraai_0988b8baef3021e50e1525bf24b1bd30'] = 'API address (base URL)';

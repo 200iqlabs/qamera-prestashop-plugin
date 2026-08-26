@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -109,7 +108,7 @@ class Qameraai extends Module
         $tab = new Tab();
         $tab->class_name = 'AdminQameraAjax';
         $tab->module = $this->name;
-        $tab->active = 1;
+        $tab->active = true;
         // Hidden tab — not shown in the back-office menu.
         $tab->id_parent = -1;
         $tab->name = [];
@@ -190,11 +189,12 @@ class Qameraai extends Module
     private function uninstallDb()
     {
         $prefix = _DB_PREFIX_;
-        $ok = true;
-        $ok = Db::getInstance()->execute('DROP TABLE IF EXISTS `' . $prefix . 'qamera_import`') && $ok;
-        $ok = Db::getInstance()->execute('DROP TABLE IF EXISTS `' . $prefix . 'qamera_order`') && $ok;
+        // Both statements run even if the first fails — a half-dropped pair
+        // would leave the module uninstallable on the next attempt.
+        $importDropped = Db::getInstance()->execute('DROP TABLE IF EXISTS `' . $prefix . 'qamera_import`');
+        $orderDropped = Db::getInstance()->execute('DROP TABLE IF EXISTS `' . $prefix . 'qamera_order`');
 
-        return $ok;
+        return $importDropped && $orderDropped;
     }
 
     /**
@@ -328,14 +328,13 @@ class Qameraai extends Module
             $credits = is_array($me['credits']) && isset($me['credits']['balance']) ? (string) $me['credits']['balance'] : (string) $me['credits'];
         }
 
-        $html = '<div class="panel">'
-            . '<h3><i class="icon icon-qrcode"></i> ' . $this->l('Konto Qamera AI') . '</h3>'
-            . '<p><strong>' . $this->l('Konto:') . '</strong> ' . htmlspecialchars($account, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p><strong>' . $this->l('Plan:') . '</strong> ' . htmlspecialchars($plan, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p><strong>' . $this->l('Saldo kredytów:') . '</strong> ' . htmlspecialchars($credits, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '</div>';
+        $this->context->smarty->assign([
+            'qamera_account' => $account,
+            'qamera_plan' => $plan,
+            'qamera_credits' => $credits,
+        ]);
 
-        return $html;
+        return $this->display(__FILE__, 'views/templates/admin/account-status.tpl');
     }
 
     /**
@@ -824,7 +823,7 @@ class Qameraai extends Module
      * @param QameraApiClient $client
      * @param int $idProduct
      *
-     * @return array{containers: array, standalone: array, is_empty: bool, error: string}
+     * @return array{containers: array, standalone: array, is_empty: bool, error: string, truncated: bool, registered: array}
      */
     private function buildProductView(QameraApiClient $client, $idProduct)
     {

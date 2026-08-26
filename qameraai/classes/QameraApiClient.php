@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
