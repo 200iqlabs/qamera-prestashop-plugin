@@ -30,7 +30,7 @@ $_MODULE['<{qameraai}prestashop>account-status_d32738b3ab78bbd5272d7202f6f45aca'
 $_MODULE['<{qameraai}prestashop>qameraai_4ee67b92afce4fdd6b3aa772ab055869'] = 'API key';
 $_MODULE['<{qameraai}prestashop>qameraai_4bac96b65c32d57b47d7c9c56bcb9b4e'] = 'Format: mk_live_<keyId>.<secret>. The key is stored in the shop configuration.';
 $_MODULE['<{qameraai}prestashop>qameraai_0988b8baef3021e50e1525bf24b1bd30'] = 'API address (base URL)';
-$_MODULE['<{qameraai}prestashop>qameraai_5aa36946cf8a4f0e5472d1d6289c70ca'] = 'Defaults to production https://qamera.ai. Change only for a dev/local environment.';
+$_MODULE['<{qameraai}prestashop>qameraai_ef2befd7f8fc957db7c9ed135adb6b3e'] = 'Defaults to the production address. Change only for a dev/local environment.';
 $_MODULE['<{qameraai}prestashop>qameraai_80afc348a833409bbf908aa48c79edb0'] = 'Default preset';
 $_MODULE['<{qameraai}prestashop>qameraai_ad6ac849c675d0524ea3856784178da2'] = 'Default preset (ID)';
 $_MODULE['<{qameraai}prestashop>qameraai_57ccb82bb0eab52da50d061d863450ea'] = 'The preset list is available once a valid API key is saved.';

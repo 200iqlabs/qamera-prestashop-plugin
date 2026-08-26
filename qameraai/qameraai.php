@@ -359,7 +359,7 @@ class Qameraai extends Module
             'type' => 'text',
             'label' => $this->l('Adres API (base URL)'),
             'name' => self::KEY_API_BASE,
-            'desc' => $this->l('Domyślnie produkcyjny https://qamera.ai. Zmień tylko dla środowiska dev/local.'),
+            'desc' => $this->l('Domyślnie adres produkcyjny. Zmień tylko dla środowiska dev/local.'),
         ];
 
         if (!empty($presetOptions['options'])) {

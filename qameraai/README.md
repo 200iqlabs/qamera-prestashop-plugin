@@ -1,6 +1,6 @@
 # Qamera AI for PrestaShop
 
-A thin wrapper around the [Qamera AI](https://qamera.ai) API. From the product page in the
+A thin wrapper around the Qamera AI API. From the product page in the
 PrestaShop back office you generate **packshots** and **product sessions**, and publish the
 approved results straight into the product gallery — without leaving the admin.
 
@@ -38,7 +38,7 @@ lineage) — **not** this module's database. Only ID mappings are stored locally
 
 ## Where to get the API key
 
-1. Sign in at [https://qamera.ai](https://qamera.ai).
+1. Sign in to your Qamera AI account.
 2. Open the account / integrations settings and generate a **plugin API key**.
 3. The key looks like `mk_live_<keyId>.<secret>`. Copy the whole thing.
 4. **Do not share** the key and do not commit it — it lives only in the shop configuration
@@ -52,7 +52,7 @@ Go to **Modules → Module Manager → Qamera AI → Configure**:
 
 1. **API key** — paste the `mk_live_...` key. Once saved, the module fetches the account
    status and credit balance.
-2. **API base URL** — production `https://qamera.ai` by default. Change it **only** for a
+2. **API base URL** — the production address by default. Change it **only** for a
    dev/local environment.
 3. **Default preset** — an optional session preset (the list appears once a valid key is saved).
 4. **AI model** — one model shared by packshots and sessions. **Required** — generation is
