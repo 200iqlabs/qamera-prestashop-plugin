@@ -192,10 +192,10 @@ payloadu.
    do wyczerpania 5 minut. Ujawnione dopiero dziś, bo w czerwcu żadne zadanie nie padło.
    **Naprawione.**
 2. **`GET /images` nie istnieje** (405). Zapis, że moduł go woła, jest nieaktualny.
-3. **Brakująca proporcja w UI.** Kontrakt dopuszcza `1:1`, `4:5`, `9:16`, `16:9`, `3:4`;
-   lista w `product-tab.tpl` oferuje cztery — **bez `9:16`**, czyli bez formatu pionowego pod
-   social. Nie łamie kontraktu, ale odcina wspieraną opcję. Nie naprawione — to zmiana w UI,
-   nie w warstwie zgodności.
+3. **Brakująca proporcja w UI (naprawione).** Kontrakt dopuszcza `1:1`, `4:5`, `9:16`, `16:9`, `3:4`;
+   lista w `product-tab.tpl` oferowała cztery — **bez `9:16`**, czyli bez formatu pionowego
+   pod social. Nie łamało kontraktu, ale odcinało wspieraną opcję. Dopisane po decyzji
+   z 2026-08-26.
 4. **Filtr `product_ref` był fail-open** — opisane w sekcji 1. **Naprawione.**
 5. Moduł nie korzysta z: `GET /aspect-ratios`, `GET /pricing`, `GET /products`,
    `/orders/*`, `/jobs/batch`, `/jobs/{id}/refresh-url`, `/webhooks/*`, `/installations/*`.
@@ -217,6 +217,9 @@ kontener PS9 raz przestał przyjmować połączenia i wymagał restartu.
 | `qameraai/classes/QameraApiClient.php` | Nowa metoda `isErrorEnvelope()`: ciało jest kopertą błędu tylko wtedy, gdy status to 4xx/5xx **albo** `error` jest jedynym kluczem najwyższego poziomu (tak wygląda `ErrorEnvelope` w kontrakcie). Użyta w `request()` i `requestMultipart()`. Dzięki temu `Job` ze statusem `failed` / `retry_pending` wraca jako dane, a nie jako wyjątek — kontroler i poller mają już gotową obsługę takiego stanu. |
 | `qameraai/qameraai.php` | `loadJobsForProduct()`: dopasowanie `product_ref` jest teraz ścisłe — zadanie bez `product_ref` wypada, zamiast przechodzić dalej. |
 | `tools/probe-ref.php` | Przepisana z jednorazowego zrzutu na narzędzie orzekające, z kodem wyjścia. |
+| `qameraai/views/templates/hook/product-tab.tpl` | Dopisane `9:16` do listy proporcji sesji. |
+| wszystkie 16 plików PHP + `qameraai/LICENSE.md` | Nagłówek AFL-3.0 i pełny tekst licencji (sekcja 6). |
+| `qameraai/qameraai.php`, `qameraai/config.xml`, `qameraai/README.md`, oba pliki tłumaczeń | Metadane modułu na angielski, klucz tłumaczenia opisu przeliczony (sekcja 6). |
 
 Weryfikacja poprawki koperty: osiem przypadków (job z błędem na 200, job bez błędu, koperta
 na 401/404/500, samotny obiekt `error` na 200, zwykły payload, puste ciało) — wszystkie
@@ -227,13 +230,12 @@ przechodzą. Na żywo: `GET /jobs/{id}` dla zadania w stanie `retry_pending` z n
 
 ## 5. Pakiet dystrybucyjny
 
-`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **22 pliki**,
-62 748 bajtów. Wszystkie wpisy zaczynają się od `qameraai/`. Wykluczone: `config_pl.xml`.
+`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **23 pliki**
+(22 + `LICENSE.md`), 70 250 bajtów. Wszystkie wpisy zaczynają się od `qameraai/`.
+Wykluczone: `config_pl.xml`.
 
 Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `docs/`, `prd.md`, `goals.md`,
 `.env*`, `docker-compose.yml`, `Makefile`, `smoke/`, `.git`.
-
-Pakiet trzeba przebudować ponownie po dołożeniu nagłówków licencyjnych.
 
 ---
 
@@ -255,15 +257,35 @@ Zebrane z listy kontrolnej PrestaShop, nie z listy własnej.
 - Brak `var_dump` / `console.log` / `serialize()`; brak zakomentowanego kodu.
 - Nazwa archiwum zgodna z nazwą modułu, bez numeru wersji; jeden moduł w archiwum.
 
+### Domknięte w tej sesji
+
+**Licencja: Academic Free License 3.0 (AFL-3.0)** — decyzja Pawła, 2026-08-26. To ta sama
+licencja, którą noszą własne moduły PrestaShopa, więc recenzent i walidator widzą oczekiwany
+nagłówek. Pozwala sprzedawać i nie nakłada nic na kupującego; z handlowego punktu widzenia
+nie kosztuje nas nic, bo wtyczka bez klucza API nie robi niczego — wartość siedzi na koncie
+Qamery, nie w kodzie.
+
+- Nagłówek AFL-3.0 w **każdym z 16 plików PHP**, w formacie „NOTICE OF LICENSE" zgodnym
+  z modułami rdzenia PrestaShopa.
+- Pełny tekst licencji jako `qameraai/LICENSE.md` (kopia pliku, który PrestaShop sam
+  dystrybuuje z modułem `ps_themecusto` — nie przepisywana ręcznie).
+- Wszystkie pliki przechodzą `php -l`; zakładka renderuje się na PS9 po zmianie
+  (kontrola odczytowa powtórzona po dołożeniu nagłówków).
+
+**Metadane po angielsku** — decyzja: przenosimy na angielski tylko to, co recenzent widzi
+najpierw, napisy w panelu zostają. Zmienione: `$this->description`, `<description>`
+w `config.xml`, `qameraai/README.md`. Klucz tłumaczenia opisu przeliczony w obu plikach
+(`pl.php`, `en.php`) — polski sklepikarz dalej widzi polski opis.
+
+**`9:16` dodane** do listy proporcji w panelu sesji — API to obsługiwało, panel nie oferował.
+
 ### Braki
 
 | Brak | Waga |
 |---|---|
-| **Nagłówek licencyjny w żadnym z 16 plików PHP** i brak pliku licencji w module | odrzucenie automatyczne — czeka na decyzję, którą licencję przyjmujemy |
-| **Brak `logo.png`** w katalogu modułu | wymagane przez Addons |
-| **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji |
+| **Brak `logo.png`** w katalogu modułu | wymagane przez Addons; to decyzja graficzna, nie mechaniczna poprawka |
+| **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji — wartość pochodzi z konta Addons, które nie istnieje |
 | **Brak `docs/`** wewnątrz modułu (lista kontrolna oczekuje dokumentacji tam, najlepiej PDF) | zgłaszane przy walidacji ręcznej |
-| **Teksty źródłowe po polsku** w `config.xml` i w `$this->displayName` / `$this->description` — lista kontrolna wymaga kodu po angielsku (tłumaczenia PL wchodzą przez system tłumaczeń) | ryzyko odrzucenia |
 
 ### `ps_versions_compliancy`
 
@@ -285,10 +307,8 @@ Nie uruchomione w tej sesji.
 
 ## 7. Otwarte
 
-- Decyzja o licencji (blokuje nagłówki, plik licencji i kolejny build pakietu).
-- Wysyłka pakietu do walidatora PrestaShop.
-- `logo.png`, `module_key`, `docs/` w module, angielskie teksty źródłowe.
-- `9:16` na liście proporcji.
+- Wysyłka pakietu do walidatora PrestaShop (wyjście na zewnątrz — czeka na zgodę).
+- `logo.png`, `module_key`, `docs/` wewnątrz modułu.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy
   większym ruchu.

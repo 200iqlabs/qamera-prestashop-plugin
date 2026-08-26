@@ -1,139 +1,149 @@
 # Qamera AI for PrestaShop
 
-Cienki moduł-wrapper na API [Qamera AI](https://qamera.ai). Z karty produktu w panelu
-PrestaShop generujesz **packshoty** i **sesje produktowe**, a zatwierdzone wyniki publikujesz
-wprost w galerii produktu — bez opuszczania back office.
+A thin wrapper around the [Qamera AI](https://qamera.ai) API. From the product page in the
+PrestaShop back office you generate **packshots** and **product sessions**, and publish the
+approved results straight into the product gallery — without leaving the admin.
 
-Źródłem prawdy o stanie generacji (role, status, akceptacja, lineage) jest API Qamery, **nie**
-baza modułu. Lokalnie trzymane są wyłącznie mapowania ID (model „Thin-B").
+The Qamera API is the source of truth for generation state (roles, status, approval,
+lineage) — **not** this module's database. Only ID mappings are stored locally ("Thin-B").
 
-- **Kompatybilność:** PrestaShop **8.x** (PHP 7.4+) oraz **9.x** (PHP 8.1+) — jeden moduł.
-- **Slug modułu:** `qameraai`
-- **Języki UI:** polski (podstawowy) + angielski (`translations/pl.php`, `translations/en.php`).
-
----
-
-## Wymagania
-
-- PrestaShop 8.0+ lub 9.x.
-- PHP 7.4 lub nowszy z rozszerzeniem **cURL** (wymagane do komunikacji z API).
-- Konto Qamera AI z aktywnym kluczem API (`mk_live_...`).
+- **Compatibility:** PrestaShop **8.x** (PHP 7.4+) and **9.x** (PHP 8.1+) — one module.
+- **Module slug:** `qameraai`
+- **Interface languages:** Polish (primary) + English (`translations/pl.php`, `translations/en.php`).
+- **Licence:** Academic Free License 3.0 (AFL-3.0) — see `LICENSE.md`.
 
 ---
 
-## Instalacja
+## Requirements
 
-1. Pobierz paczkę `qameraai.zip` (patrz sekcja *Budowanie paczki ZIP*) lub spakuj katalog `qameraai/`.
-2. W panelu PrestaShop: **Moduły → Menedżer modułów → Wgraj moduł** i wskaż `qameraai.zip`.
-   - Alternatywnie skopiuj katalog `qameraai/` do `modules/` w katalogu sklepu i kliknij **Zainstaluj**.
-3. Po instalacji moduł:
-   - tworzy dwie tabele mapujące ID (`ps_qamera_order`, `ps_qamera_import`),
-   - rejestruje ukrytą zakładkę kontrolera AJAX,
-   - podpina się pod hook `displayAdminProductsExtra` (zakładka na karcie produktu).
+- PrestaShop 8.0+ or 9.x.
+- PHP 7.4 or newer with the **cURL** extension (required to reach the API).
+- A Qamera AI account with an active API key (`mk_live_...`).
 
 ---
 
-## Skąd wziąć klucz API
+## Installation
 
-1. Zaloguj się na [https://qamera.ai](https://qamera.ai).
-2. Wejdź w ustawienia konta / integracji i wygeneruj **klucz API wtyczki**.
-3. Klucz ma format `mk_live_<keyId>.<secret>`. Skopiuj go w całości.
-4. **Nie udostępniaj** klucza ani nie commituj go do repozytorium — żyje wyłącznie w konfiguracji sklepu
-   (`ps_configuration`), nie w plikach modułu.
-
----
-
-## Konfiguracja
-
-Przejdź do **Moduły → Menedżer modułów → Qamera AI → Konfiguruj**:
-
-1. **Klucz API** — wklej klucz `mk_live_...`. Po zapisaniu moduł pobierze status konta i saldo kredytów.
-2. **Adres API (base URL)** — domyślnie produkcyjny `https://qamera.ai`. Zmień **tylko** dla środowiska
-   dev/local.
-3. **Domyślny preset** — opcjonalny preset sesji (lista pojawia się po zapisaniu poprawnego klucza).
-4. **Model AI** — wspólny model dla packshotów i sesji. **Wymagany** — bez niego generacja jest zablokowana.
-
-Po zapisaniu poprawnego klucza panel pokazuje **Konto**, **Plan** i **Saldo kredytów**. Każdy błąd
-(brak/niepoprawny klucz, brak kredytów, limit zapytań, błąd serwera, brak połączenia) jest wyświetlany
-jako czytelny komunikat — moduł nigdy nie pokazuje białego ekranu.
+1. Download the `qameraai.zip` package (see *Building the ZIP package*) or archive the
+   `qameraai/` directory yourself.
+2. In the PrestaShop back office: **Modules → Module Manager → Upload a module**, then pick
+   `qameraai.zip`.
+   - Alternatively copy the `qameraai/` directory into the shop's `modules/` and click **Install**.
+3. On install the module:
+   - creates two ID-mapping tables (`ps_qamera_order`, `ps_qamera_import`),
+   - registers a hidden admin tab for its AJAX controller,
+   - hooks into `displayAdminProductsExtra` (the tab on the product page).
 
 ---
 
-## Przepływ end-to-end (Core Flow)
+## Where to get the API key
 
-Cała praca odbywa się na karcie produktu, w zakładce **Qamera AI**:
-
-1. **Dodaj zdjęcia do produktu** standardowo (zakładka *Zdjęcia* w PrestaShop). To one są źródłem.
-2. **Wybierz zdjęcie** z galerii i dodaj je jako **źródło** (do generacji) albo bezpośrednio jako
-   gotowy **packshot**.
-3. **Generuj packshot** z dodanego zdjęcia źródłowego. Moduł wysyła plik do Qamery, czeka na analizę
-   i zleca generację (synchronicznie, wynik przez polling — bez crona i kolejek).
-4. **Zatwierdź lub odrzuć** wygenerowany packshot. Odrzucenie usuwa go z katalogu.
-5. **Generuj sesję** z zatwierdzonego packshota, używając ustawień z panelu (preset, model/manekin,
-   sceneria, proporcje, liczba zdjęć, kontekst).
-   - Reguła twarda: **sesja zawsze powstaje z packshota, nigdy wprost ze zdjęcia źródłowego.**
-6. **Zatwierdź** wybrane wyniki sesji — zatwierdzone zdjęcia są **publikowane w galerii produktu**
-   (z deduplikacją po SHA-256, więc ponowne zatwierdzenie nie tworzy duplikatu) i widoczne na sklepie.
+1. Sign in at [https://qamera.ai](https://qamera.ai).
+2. Open the account / integrations settings and generate a **plugin API key**.
+3. The key looks like `mk_live_<keyId>.<secret>`. Copy the whole thing.
+4. **Do not share** the key and do not commit it — it lives only in the shop configuration
+   (`ps_configuration`), never in the module's files.
 
 ---
 
-## Obsługa błędów
+## Configuration
 
-Każda ścieżka wywołania API mapuje błędy na czytelny komunikat administratora:
+Go to **Modules → Module Manager → Qamera AI → Configure**:
 
-| Sytuacja | Komunikat |
+1. **API key** — paste the `mk_live_...` key. Once saved, the module fetches the account
+   status and credit balance.
+2. **API base URL** — production `https://qamera.ai` by default. Change it **only** for a
+   dev/local environment.
+3. **Default preset** — an optional session preset (the list appears once a valid key is saved).
+4. **AI model** — one model shared by packshots and sessions. **Required** — generation is
+   blocked without it.
+
+With a valid key saved, the panel shows **Account**, **Plan** and **Credit balance**. Every
+failure (missing or invalid key, no credits, rate limit, server error, no connection) is
+surfaced as a readable message — the module never renders a blank screen.
+
+---
+
+## End-to-end flow (Core Flow)
+
+Everything happens on the product page, under the **Qamera AI** tab:
+
+1. **Add product photos** the usual way (the *Images* tab in PrestaShop). Those are the source.
+2. **Pick a photo** from the gallery and add it either as a **source** (for generation) or
+   directly as a finished **packshot**.
+3. **Generate a packshot** from the source photo. The module uploads the file to Qamera, waits
+   for the analysis, and submits the generation — synchronously, with the result delivered by
+   polling (no cron, no queue).
+4. **Accept or reject** the generated packshot. Rejecting removes it from the catalogue.
+5. **Generate a session** from an accepted packshot, using the settings in the panel (preset,
+   model/mannequin, scenery, aspect ratio, image count, context).
+   - Hard rule: **a session always comes from a packshot, never straight from a source photo.**
+6. **Accept** the session results you want — accepted images are **published into the product
+   gallery** (deduplicated by SHA-256, so accepting again never creates a duplicate) and show
+   up on the storefront.
+
+---
+
+## Error handling
+
+Every API call path maps failures to a readable admin message:
+
+| Situation | Message |
 |---|---|
-| Brak / niepoprawny klucz API | „Brak klucza API…" / „Nieprawidłowy lub nieautoryzowany klucz API…" |
-| Brak kredytów (402) | „Brak kredytów na koncie Qamera AI." |
-| Limit zapytań (429) | „Zbyt wiele żądań do Qamera AI. Spróbuj ponownie za chwilę." |
-| Błąd serwera (5xx) | „Błąd serwera Qamera AI. Spróbuj ponownie później." |
-| Brak połączenia / timeout | „Nie można połączyć się z Qamera AI: …" |
+| Missing / invalid API key | "No API key…" / "Invalid or unauthorised API key…" |
+| No credits (402) | "No credits left on the Qamera AI account." |
+| Rate limit (429) | "Too many requests to Qamera AI. Try again in a moment." |
+| Server error (5xx) | "Qamera AI server error. Try again later." |
+| No connection / timeout | "Cannot reach Qamera AI: …" |
 
-Wszystkie te komunikaty mają tłumaczenia PL i EN (`translations/`).
-
----
-
-## Tłumaczenia
-
-- `translations/pl.php` — polski (język podstawowy).
-- `translations/en.php` — angielski (fallback).
-
-Pliki używają klasycznego formatu `$_MODULE` PrestaShop i pokrywają stronę ustawień, obie szablony
-Smarty, odpowiedzi błędów kontrolera AJAX, komunikaty klienta API **oraz stringi renderowane po stronie
-przeglądarki** (etykiety przycisków, komunikaty postępu, potwierdzenia) — patrz niżej.
+All of these have Polish and English translations (`translations/`).
 
 ---
 
-## Budowanie paczki ZIP
+## Translations
 
-Z katalogu nadrzędnego względem `qameraai/`:
+- `translations/pl.php` — Polish (primary interface language).
+- `translations/en.php` — English (fallback).
+
+Both use PrestaShop's classic `$_MODULE` format and cover the settings page, both Smarty
+templates, the AJAX controller's error responses, the API client's messages **and the strings
+rendered in the browser** (button labels, progress messages, confirmations) — see below.
+
+---
+
+## Building the ZIP package
+
+From the repository root:
 
 ```bash
-zip -r qameraai.zip qameraai -x 'qameraai/config_*.xml'
+php tools/build-zip.php
 ```
 
-Paczka musi zawierać katalog `qameraai/` na najwyższym poziomie (PrestaShop wymaga, by nazwa katalogu
-w archiwum odpowiadała slugowi modułu). Wykluczamy `config_*.xml` — to cache tłumaczeń opisu modułu
-generowany per-instalacja przez PrestaShop, nie kod źródłowy (`config.xml` bez sufiksu zostaje).
+The package must contain the `qameraai/` directory at the top level (PrestaShop requires the
+directory name inside the archive to match the module slug). `config_*.xml` is excluded — that
+is PrestaShop's per-installation cache of the module description, not source (`config.xml`
+without a suffix stays).
 
 ---
 
-## Zakres (świadome granice MVP)
+## Scope (deliberate MVP boundaries)
 
-W zakresie: zdjęcie → packshot → sesja → publikacja zatwierdzonych w galerii, w całości z karty produktu.
+In scope: photo → packshot → session → publishing approved results into the gallery, entirely
+from the product page.
 
-Poza zakresem: webhooki, własna kolejka/cron, generacja zbiorcza wielu produktów, warianty (combinations),
-multistore, pełne i18n (tylko PL+EN), edycja/regeneracja/klonowanie wyników.
+Out of scope: webhooks, an own queue/cron, bulk generation across many products, product
+combinations, multistore, full i18n (PL+EN only), editing/regenerating/cloning results.
 
 ---
 
-## Stringi JavaScript (i18n)
+## JavaScript strings (i18n)
 
-Etykiety, komunikaty postępu i potwierdzenia renderowane po stronie przeglądarki
-(`views/js/qamera-product.js`) **są przetłumaczone PL/EN**. Szablon `product-tab.tpl` emituje payload
-JSON (`<script type="application/json" id="qamera-i18n">`), w którym każdy string przechodzi przez
-system tłumaczeń PrestaShop (`{l s='…' mod='qameraai' js=1}`, domena `product-tab`). Skrypt czyta ten
-payload (`JSON.parse`) i podmienia teksty; przy braku payloadu funkcja `t()` używa polskiego źródła jako
-fallbacku, więc UI nigdy nie renderuje pustych etykiet. Dodając nowy string w JS: dodaj klucz do payloadu
-w `product-tab.tpl` i wpis do `translations/pl.php` + `translations/en.php` (domena `product-tab`,
-klucz = `md5` polskiego źródła).
+Labels, progress messages and confirmations rendered in the browser
+(`views/js/qamera-product.js`) **are translated PL/EN**. The `product-tab.tpl` template emits a
+JSON payload (`<script type="application/json" id="qamera-i18n">`) in which every string goes
+through PrestaShop's translation system (`{l s='…' mod='qameraai' js=1}`, domain `product-tab`).
+The script reads that payload (`JSON.parse`) and substitutes the texts; with no payload the
+`t()` helper falls back to the Polish source, so the interface never renders empty labels. When
+adding a new JS string: add the key to the payload in `product-tab.tpl` and an entry to
+`translations/pl.php` + `translations/en.php` (domain `product-tab`, key = `md5` of the Polish
+source).

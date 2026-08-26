@@ -3,7 +3,7 @@
   <name>qameraai</name>
   <displayName><![CDATA[Qamera AI for PrestaShop]]></displayName>
   <version><![CDATA[1.0.0]]></version>
-  <description><![CDATA[Generuj packshoty i sesje produktowe Qamera AI z karty produktu i publikuj zatwierdzone wyniki w galerii.]]></description>
+  <description><![CDATA[Generate Qamera AI packshots and product sessions from the product page and publish approved results in the gallery.]]></description>
   <author><![CDATA[Qamera AI]]></author>
   <tab><![CDATA[administration]]></tab>
   <is_configurable>1</is_configurable>

@@ -1,9 +1,22 @@
 <?php
-
+/**
+ * Copyright since 2026 200IQ Labs and Contributors
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License 3.0 (AFL-3.0)
+ * that is bundled with this package in the file LICENSE.md.
+ * It is also available through the world-wide-web at this URL:
+ * https://opensource.org/licenses/AFL-3.0
+ *
+ * @author    Qamera AI
+ * @copyright Since 2026 200IQ Labs
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
+ */
 global $_MODULE;
 $_MODULE = array();
 $_MODULE['<{qameraai}prestashop>qameraai_1ed1bac6999cbe6a736133f4a53bf6dd'] = 'Qamera AI for PrestaShop';
-$_MODULE['<{qameraai}prestashop>qameraai_06600e66abd70bb66ddd36889be00d23'] = 'Generate Qamera AI packshots and product sessions from the product page and publish approved results in the gallery.';
+$_MODULE['<{qameraai}prestashop>qameraai_459b4d8ed43ed20bf471b9858f8f3b88'] = 'Generate Qamera AI packshots and product sessions from the product page and publish approved results in the gallery.';
 $_MODULE['<{qameraai}prestashop>qameraai_6ce1a35501ace70018557dca4c90b7bd'] = 'Remove the Qamera AI module? Local ID mappings will be deleted (generation state stays in Qamera AI).';
 $_MODULE['<{qameraai}prestashop>qameraai_de9c2ad90e57aa7b0424108ca44f26be'] = 'Settings saved.';
 $_MODULE['<{qameraai}prestashop>qameraai_d2bfe39764a51af95714563ec4c0e40a'] = 'No AI model selected — packshot and session generation is blocked until you set one.';

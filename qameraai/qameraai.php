@@ -1,5 +1,19 @@
 <?php
 /**
+ * Copyright since 2026 200IQ Labs and Contributors
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License 3.0 (AFL-3.0)
+ * that is bundled with this package in the file LICENSE.md.
+ * It is also available through the world-wide-web at this URL:
+ * https://opensource.org/licenses/AFL-3.0
+ *
+ * @author    Qamera AI
+ * @copyright Since 2026 200IQ Labs
+ * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
+ */
+/**
  * Qamera AI for PrestaShop.
  *
  * Thin wrapper around the Qamera AI API. Merchant generates packshots and
@@ -43,7 +57,7 @@ class Qameraai extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Qamera AI for PrestaShop');
-        $this->description = $this->l('Generuj packshoty i sesje produktowe Qamera AI z karty produktu i publikuj zatwierdzone wyniki w galerii.');
+        $this->description = $this->l('Generate Qamera AI packshots and product sessions from the product page and publish approved results in the gallery.');
         $this->confirmUninstall = $this->l('Czy na pewno usunąć moduł Qamera AI? Lokalne mapowania ID zostaną usunięte (stan generacji pozostaje w Qamera AI).');
     }
 
