@@ -439,3 +439,74 @@ ponownie.
 **Do zapamiętania:** od **1 lutego 2026** aktualizacja produktu jest odrzucana, jeśli produkt
 nie jest już zgodny z najnowszą wersją PrestaShopa. To argument, żeby `ps_versions_compliancy`
 nie zostawiać w tyle za wydaniami 9.x.
+
+---
+
+## 9. Domknięcie tematów otwartych (2026-08-26, druga tura)
+
+### Ikona listingu — zrobiona
+
+`docs/listing-assets/icon-57.png` — 57×57, wymóg formularza listingu, wyprowadzona z tej samej
+kanonicznej ikony Qamery co `logo.png`, ale **na białej podkładce**: siatka listingu nie
+gwarantuje białego tła, a grafitowy znak na ciemnym wierszu by zniknął. Katalog leży w `docs/`,
+więc do pakietu nie trafia.
+
+### Zrzuty ekranu — **nie zrobione**
+
+Materiał jest dobry (zakładka z prawdziwą wygenerowaną sesją na produkcie 1), ale przechwycenie
+padło na środowisku, nie na module — opis niżej. Do zrobienia przy stabilnym sklepie.
+
+### Awaria środowiska warta zapisania: `localhost` znika
+
+Trzy przebiegi z rzędu padły z `ERR_CONNECTION_RESET`, a `curl` dostawał `000`, mimo że
+kontener obsługiwał ruch normalnie od środka (`docker exec … curl localhost` → 302 w 1,3 s)
+i port był wystawiony. Przyczyna:
+
+```
+Get-NetTCPConnection -LocalPort 8091 -State Listen
+LocalAddress   OwningProcess
+::1            21824     ← osierocony wslrelay, przechwytuje „localhost"
+::             57636     ← właściwy proxy Dockera
+```
+
+**Osierocony proces `wslrelay` trzymał `::1` dla obu portów (8082 i 8091).** `localhost`
+rozwiązuje się na `::1`, więc cały ruch wpadał w martwy nasłuch, a `127.0.0.1` działał. To nie
+jest problem PrestaShopa ani modułu.
+
+Objaw poboczny, który potrafi zmylić: w zakładce **ładowały się tylko obrazy zewnętrzne**
+(wyniki generacji z Supabase), a miniatury z galerii sklepu zostawały szare — bo tamte idą
+przez `localhost`. Sprawdzone, że same adresy są poprawne: `/1-home_default/…jpg` z właściwym
+nagłówkiem `Host` zwraca `200 image/jpeg`. **Moduł jest w porządku.**
+
+Naprawa, która zadziałała: `docker compose --profile ps9 down` + `up -d` (bez `-v`, dane
+zostają) — przeładowanie kontenera odtwarza relay. Samo `stop`/`start` nie wystarczy; to
+właśnie cykle `stop`/`start` ten stan produkują.
+
+### PrestaShop 8 — **nie zweryfikowany na bieżącym kodzie**
+
+Kontrola odczytowa z pierwszej tury szła na kodzie **sprzed** sweepu standardu kodu i przed
+przeniesieniem panelu konta do szablonu. Ponowne sprawdzenie padło na tej samej awarii portu.
+Ryzyko jest niskie (`Module::display()` istnieje tak samo w 8 i 9, składnia sprawdzona na
+PHP 7.4), ale **to jest niesprawdzone i tak zostaje zapisane**.
+
+### Wersje PrestaShopa
+
+Testujemy na **9.1.4**, czyli bieżącym stabilnym z gałęzi 9.1. **9.2 było w fazie zamrożenia
+funkcji w lipcu 2026** — przy regule z 1 lutego 2026 (aktualizacja odrzucana bez zgodności
+z najnowszą wersją) to kwestia miesięcy, nie lat.
+
+### WooCommerce ma **odwrotną** regułę niż PrestaShop
+
+Wytyczne katalogu WordPress.org jawnie dopuszczają wtyczkę będącą interfejsem do zewnętrznej,
+także płatnej usługi — pod warunkiem że usługa robi coś realnego i jest **opisana w `readme`,
+najlepiej z odsyłaczem do jej regulaminu**. Czyli odsyłacz do Qamery jest tam w porządku,
+a nawet oczekiwany. Ograniczenia WordPressa dotyczą czego innego: osadzania odsyłaczy na
+**witrynie sklepu** bez zgody właściciela i zasypywania panelu powiadomieniami sprzedażowymi.
+
+**Wniosek: decyzji o usunięciu odsyłaczy nie wolno przenieść na WooCommerce.** „Ujednolicenie"
+obu wtyczek osłabiłoby tamten kanał bez żadnego powodu.
+
+### Przewodnik zgłoszenia
+
+Kroki, reguły i pozycje otwarte zebrane w czytelnej formie:
+<https://claude.ai/code/artifact/ba1c2a3b-4ba5-418f-99e1-08d58fe4a579>
