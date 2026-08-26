@@ -221,6 +221,7 @@ kontener PS9 raz przestał przyjmować połączenia i wymagał restartu.
 | wszystkie 16 plików PHP + `qameraai/LICENSE.md` | Nagłówek AFL-3.0 i pełny tekst licencji (sekcja 6). |
 | `qameraai/qameraai.php`, `qameraai/config.xml`, `qameraai/README.md`, oba pliki tłumaczeń | Metadane modułu na angielski, klucz tłumaczenia opisu przeliczony (sekcja 6). |
 | `qameraai/docs/` (przewodnik dla sklepikarza, HTML + PDF) + `tools/build-docs.js` | Pozycja z listy kontrolnej, której walidator nie sprawdza (sekcja 6). |
+| `qameraai/logo.png` | Znak modułu, wyprowadzony z kanonicznej ikony Qamery (sekcja 6). |
 | wszystkie 16 plików PHP | Standard kodu PrestaShopa — 14 plików miało odstępstwa, poprawione ich własnym narzędziem (sekcja 6). |
 | `qameraai/.htaccess`, 4 pliki `js`/`css`/`tpl`, `views/templates/admin/account-status.tpl`, `AdminQameraAjaxController.php`, `qameraai.php`, `.php-cs-fixer.dist.php` | Wszystkie uwagi z raportu walidatora PrestaShopa (sekcja 6). |
 
@@ -233,8 +234,8 @@ przechodzą. Na żywo: `GET /jobs/{id}` dla zadania w stanie `retry_pending` z n
 
 ## 5. Pakiet dystrybucyjny
 
-`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **29 plików**
-(kod modułu + `LICENSE.md` + `.htaccess` + szablon panelu konta + dokumentacja dla
+`qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **30 plików**
+(kod modułu + `LICENSE.md` + `.htaccess` + `logo.png` + szablon panelu konta + dokumentacja dla
 sklepikarza). Wszystkie wpisy zaczynają się od `qameraai/`. Wykluczone: `config_pl.xml`.
 
 Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `prd.md`, `goals.md`, `.env*`,
@@ -288,11 +289,17 @@ w `config.xml`, `qameraai/README.md`. Klucz tłumaczenia opisu przeliczony w obu
 
 | Brak | Waga |
 |---|---|
-| **Brak `logo.png`** w katalogu modułu | wymagane przez Addons; to decyzja graficzna, nie mechaniczna poprawka |
 | **Brak `module_key`** w konstruktorze | wymagane, żeby sprzedawcy dostawali powiadomienia o aktualizacji — wartość pochodzi z konta Addons |
 
-Żadnej z tych dwóch walidator nie zgłosił — wychodzą przy przeglądzie ręcznym albo dopiero
-przy samym zgłoszeniu, więc lista zostaje otwarta mimo czystego raportu.
+Tej pozycji walidator nie zgłasza — wychodzi przy przeglądzie ręcznym albo dopiero
+przy samym zgłoszeniu, więc zostaje otwarta mimo czystego raportu.
+
+**`logo.png` — dołożone w tej sesji.** Nie było potrzeby niczego projektować: kanoniczny
+znak Qamery (przysłona-„Q", grafit `#252b30` + teal `#83babc`) leży w repozytorium platformy
+jako ikona aplikacji 512×512 z przezroczystym tłem. Przeskalowany do **140×140**, czyli
+rozmiaru, który niesie większość modułów rdzenia PrestaShopa (`ps_facetedsearch`,
+`contactform`, `ps_emailsubscription`), z zachowaniem kanału alfa. Sprawdzone, że sklep go
+serwuje.
 
 **Dokumentacja w `qameraai/docs/` — dopisana w tej sesji.** Przewodnik dla sklepikarza:
 co moduł robi, co trzeba mieć przed startem, instalacja, sześć kroków generacji, kredyty,
@@ -382,7 +389,7 @@ PHPStan dla modułów. Uruchomione lokalnie, bez konta.
 ## 7. Otwarte
 
 - Przegląd ręczny po stronie PrestaShopa (instalacja, konfiguracja, lektura kodu) — walidator automatyczny przeszedł, to jest osobny etap.
-- `logo.png` i `module_key` — oba po stronie konta sprzedawcy.
+- `module_key` — wartość z konta sprzedawcy.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy
   większym ruchu.
