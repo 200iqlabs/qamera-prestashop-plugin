@@ -220,6 +220,7 @@ kontener PS9 raz przestał przyjmować połączenia i wymagał restartu.
 | `qameraai/views/templates/hook/product-tab.tpl` | Dopisane `9:16` do listy proporcji sesji. |
 | wszystkie 16 plików PHP + `qameraai/LICENSE.md` | Nagłówek AFL-3.0 i pełny tekst licencji (sekcja 6). |
 | `qameraai/qameraai.php`, `qameraai/config.xml`, `qameraai/README.md`, oba pliki tłumaczeń | Metadane modułu na angielski, klucz tłumaczenia opisu przeliczony (sekcja 6). |
+| wszystkie 16 plików PHP | Standard kodu PrestaShopa — 14 plików miało odstępstwa, poprawione ich własnym narzędziem (sekcja 6). |
 
 Weryfikacja poprawki koperty: osiem przypadków (job z błędem na 200, job bez błędu, koperta
 na 401/404/500, samotny obiekt `error` na 200, zwykły payload, puste ciało) — wszystkie
@@ -231,7 +232,7 @@ przechodzą. Na żywo: `GET /jobs/{id}` dla zadania w stanie `retry_pending` z n
 ## 5. Pakiet dystrybucyjny
 
 `qameraai.zip` przebudowany z bieżącego drzewa (`php tools/build-zip.php`): **23 pliki**
-(22 + `LICENSE.md`), 70 250 bajtów. Wszystkie wpisy zaczynają się od `qameraai/`.
+(22 + `LICENSE.md`). Wszystkie wpisy zaczynają się od `qameraai/`.
 Wykluczone: `config_pl.xml`.
 
 Sprawdzone i **nieobecne** w pakiecie: `tools/`, `context/`, `docs/`, `prd.md`, `goals.md`,
@@ -296,18 +297,45 @@ PrestaShopowa i nie wywoła błędu walidatora, ale jest deklaracją na przyszł
 a nie stwierdzeniem faktu. Zostawiam bez zmiany — obniżanie górnej granicy przy każdym
 wydaniu 9.x oznaczałoby wypuszczanie aktualizacji modułu tylko po to, żeby ją podnieść.
 
-### Walidator PrestaShop
+### Walidator PrestaShop — **nie da się uruchomić bez konta sprzedawcy**
 
-`validator.prestashop.com` przyjmuje ZIP albo **publiczne** repozytorium GitHub. Nasze jest
-prywatne, więc w grę wchodzi tylko wysyłka pakietu. To wysłanie modułu na zewnątrz —
-i sensowne dopiero po dołożeniu nagłówków, żeby raport nie był w całości o nich.
-Nie uruchomione w tej sesji.
+Próba wykonana, wynik negatywny i wart zapisania, bo zmienia plan wydania.
+
+`validator.prestashop.com` **nie ma już anonimowego wgrywania**. Strona główna przekierowuje
+na `/auth/login` z jednym przyciskiem „Continue with PrestaShop Account" i zdaniem
+„Use your existing seller account to log in and use the Validator". Sprawdzone ścieżki:
+`/` i `/module` → przekierowanie na logowanie; `/validator`, `/upload`, `/search` → 404;
+publiczne zostają tylko `/documentation`, `/changelog` i `/generator`, i żadna z nich nie ma
+pola na plik. Droga przez publiczne repozytorium GitHub jest za tym samym logowaniem, a nasze
+repozytorium i tak jest prywatne.
+
+Konto sprzedawcy jest poza zakresem tego zlecenia (wyraźny zakaz zakładania), więc walidator
+**nie został uruchomiony**. To jedyna pozycja z Fazy B, której nie dało się domknąć od tej
+strony — potrzeba człowieka z kontem PrestaShop Account.
+
+### Zamiast walidatora: standard kodu, który PrestaShop publikuje
+
+`prestashop/php-dev-tools` (v5) to paczka, którą PrestaShop wydaje jako swój standard kodu —
+konfiguracja `php-cs-fixer` (`PrestaShop\CodingStandards\CsFixer\Config`) plus rozszerzenie
+PHPStan dla modułów. Uruchomione lokalnie, bez konta.
+
+- **Pierwsze przejście: 14 z 16 plików miało odstępstwa.** Wszystkie drobne i mechaniczne:
+  brak pustej linii po `<?php`, wolnostojący komentarz opisowy zapisany jako `/**` zamiast
+  `/*` (blok dokumentacyjny musi opisywać konstrukcję), `array()` zamiast `[]`, `const`
+  bez `public`, oraz porządek i wielkość liter w znacznikach `@param` / `@return` / `@throws`.
+- Poprawione **ich własnym narzędziem**, nie ręcznie. Drugie przejście: **0 z 16**.
+- Po poprawce zweryfikowane: `php -l` czyste na **PHP 7.4** (dolna granica deklarowanej
+  zgodności — pierwszy raz sprawdzona w tej sesji) i na PHP 8.1; nagłówek licencyjny nadal
+  na wszystkich 16 plikach; zakładka nadal renderuje się i odtwarza stan z API na PS9.
+- **PHPStan z rozszerzeniem dla modułów nie wystartował** ani na drzewie PS 8.2.7, ani na
+  9.1.4 — ich `bootstrap.php` nie ładuje klas rdzenia (`Class "LinkCore" not found`).
+  Nie uruchomiony; to narzędzie deweloperskie PrestaShopa, nie część walidacji Addons.
 
 ---
 
 ## 7. Otwarte
 
-- Wysyłka pakietu do walidatora PrestaShop (wyjście na zewnątrz — czeka na zgodę).
+- Walidator PrestaShop — wymaga konta sprzedawcy (PrestaShop Account), którego nie wolno mi zakładać. Pozycja dla człowieka.
 - `logo.png`, `module_key`, `docs/` wewnątrz modułu.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy

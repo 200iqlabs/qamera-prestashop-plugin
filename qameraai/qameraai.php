@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -13,7 +14,7 @@
  * @copyright Since 2026 200IQ Labs
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-/**
+/*
  * Qamera AI for PrestaShop.
  *
  * Thin wrapper around the Qamera AI API. Merchant generates packshots and
@@ -37,12 +38,12 @@ require_once __DIR__ . '/classes/QameraCatalogCache.php';
 class Qameraai extends Module
 {
     /** Configuration keys (ps_configuration). */
-    const KEY_API_KEY = 'QAMERA_API_KEY';
-    const KEY_DEFAULT_PRESET_ID = 'QAMERA_DEFAULT_PRESET_ID';
-    const KEY_API_BASE = 'QAMERA_API_BASE';
+    public const KEY_API_KEY = 'QAMERA_API_KEY';
+    public const KEY_DEFAULT_PRESET_ID = 'QAMERA_DEFAULT_PRESET_ID';
+    public const KEY_API_BASE = 'QAMERA_API_BASE';
     // AI model (one, shared by packshot + session generation; chosen here, not
     // in the generator — keeps "wybierz i zatwierdź" free of AI jargon).
-    const KEY_AI_MODEL = 'QAMERA_AI_MODEL';
+    public const KEY_AI_MODEL = 'QAMERA_AI_MODEL';
 
     public function __construct()
     {
@@ -263,7 +264,7 @@ class Qameraai extends Module
     /**
      * Persist submitted settings.
      *
-     * @return string Rendered confirmation / error banner.
+     * @return string rendered confirmation / error banner
      */
     private function postProcess()
     {
@@ -522,6 +523,7 @@ class Qameraai extends Module
      * Enqueue the product-tab assets on the product edit screen (PS8 + PS9).
      *
      * @param array $params
+     *
      * @return void
      */
     public function hookActionAdminControllerSetMedia($params)
@@ -546,6 +548,7 @@ class Qameraai extends Module
      * errors are surfaced explicitly (no white screen).
      *
      * @param array $params
+     *
      * @return string
      */
     public function hookDisplayAdminProductsExtra($params)
@@ -604,6 +607,7 @@ class Qameraai extends Module
      * MVP is single-store; a shop{id_shop}- prefix is added when multistore lands.
      *
      * @param int $idProduct
+     *
      * @return string
      */
     private function buildExternalRef($idProduct)
@@ -616,7 +620,8 @@ class Qameraai extends Module
      * ps-{id_product}-img-{id_image} (or legacy ps-img-{id_image}).
      *
      * @param string $externalRef
-     * @return int 0 when no match.
+     *
+     * @return int 0 when no match
      */
     private function parseImageIdFromRef($externalRef)
     {
@@ -633,11 +638,12 @@ class Qameraai extends Module
      * the Core Flow source picker — the plugin never uploads its own file; the
      * merchant adds images to the product gallery the normal PrestaShop way.
      *
-     * @param int   $idProduct
-     * @param array $registered Map id_image => [as_image, as_packshot] from the API.
+     * @param int $idProduct
+     * @param array $registered map id_image => [as_image, as_packshot] from the API
      * @param array $excludeIds id_images to hide (our own session imports — they
-     *                          are published results, not source candidates).
-     * @return array List of {id_image, url, cover, as_image, as_packshot}.
+     *                          are published results, not source candidates)
+     *
+     * @return array list of {id_image, url, cover, as_image, as_packshot}
      */
     private function loadGalleryImages($idProduct, array $registered, array $excludeIds = [])
     {
@@ -700,7 +706,8 @@ class Qameraai extends Module
      * picker so a generated image is never offered as a generation source.
      *
      * @param int $idProduct
-     * @return array List of int id_image.
+     *
+     * @return array list of int id_image
      */
     private function importedImageIds($idProduct)
     {
@@ -726,6 +733,7 @@ class Qameraai extends Module
      * empty list and a collected, human-readable error message.
      *
      * @param QameraApiClient $client
+     *
      * @return array{models: array, sceneries: array, ai_models: array, presets: array, error: string}
      */
     private function loadCatalog(QameraApiClient $client)
@@ -762,8 +770,9 @@ class Qameraai extends Module
      * Normalize an API list response into [{id, name}, ...].
      * Accepts { <listKey>: [...] }, { data: [...] }, { items: [...] } or a bare list.
      *
-     * @param mixed  $res
+     * @param mixed $res
      * @param string $listKey
+     *
      * @return array
      */
     private function extractList($res, $listKey)
@@ -813,7 +822,8 @@ class Qameraai extends Module
      * readable state error.
      *
      * @param QameraApiClient $client
-     * @param int             $idProduct
+     * @param int $idProduct
+     *
      * @return array{containers: array, standalone: array, is_empty: bool, error: string}
      */
     private function buildProductView(QameraApiClient $client, $idProduct)
@@ -935,9 +945,10 @@ class Qameraai extends Module
      *
      * @param array $pk
      * @param array $sessionsByPackshot Map asset_id -> [session, ...]
-     * @param array $jobsById           Map job_id -> job (for image resolution)
-     * @param int   $idProduct          For resolving a directly-registered
-     *                                  packshot's image from its external_ref.
+     * @param array $jobsById Map job_id -> job (for image resolution)
+     * @param int $idProduct for resolving a directly-registered
+     *                       packshot's image from its external_ref
+     *
      * @return array
      */
     private function mapPackshot(array $pk, array $sessionsByPackshot, array $jobsById, $idProduct)
@@ -990,7 +1001,8 @@ class Qameraai extends Module
      * context — a failed /jobs call yields empty maps so packshots still render.
      *
      * @param QameraApiClient $client
-     * @param string          $externalRef Product external_ref to match product_ref.
+     * @param string $externalRef product external_ref to match product_ref
+     *
      * @return array{by_id: array, sessions_by_packshot: array}
      */
     private function loadJobsForProduct(QameraApiClient $client, $externalRef)
@@ -1054,6 +1066,7 @@ class Qameraai extends Module
      * First signed download URL among a job's outputs (JobOutput.url), or ''.
      *
      * @param array $job
+     *
      * @return string
      */
     private function firstOutputUrl(array $job)
@@ -1073,7 +1086,8 @@ class Qameraai extends Module
      * source photo is the merchant's own gallery image. Returns '' on no match.
      *
      * @param string $externalRef
-     * @param int    $idProduct
+     * @param int $idProduct
+     *
      * @return string
      */
     private function resolveLocalImageUrl($externalRef, $idProduct)
@@ -1105,6 +1119,7 @@ class Qameraai extends Module
      * Accepts a string, a {state|status} map, or boolean accepted/approved flags.
      *
      * @param mixed $node
+     *
      * @return string
      */
     private function votingState($node)
@@ -1147,8 +1162,9 @@ class Qameraai extends Module
     /**
      * Safely read a sub-array by key.
      *
-     * @param mixed  $node
+     * @param mixed $node
      * @param string $key
+     *
      * @return array
      */
     private function arr($node, $key)

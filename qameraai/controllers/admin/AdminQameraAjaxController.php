@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -13,7 +14,7 @@
  * @copyright Since 2026 200IQ Labs
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-/**
+/*
  * Qamera AI for PrestaShop — admin AJAX controller (Flow A).
  *
  * Flow A: product photo -> packshot. The browser cannot hold the API key, so
@@ -40,10 +41,10 @@ if (!defined('_PS_VERSION_')) {
 class AdminQameraAjaxController extends ModuleAdminController
 {
     /** @var int Source-image analysis poll: max attempts before giving up. */
-    const ANALYSIS_MAX_ATTEMPTS = 6;
+    public const ANALYSIS_MAX_ATTEMPTS = 6;
 
     /** @var int Source-image analysis poll: seconds between attempts. */
-    const ANALYSIS_WAIT_SECONDS = 2;
+    public const ANALYSIS_WAIT_SECONDS = 2;
 
     public function __construct()
     {
@@ -57,7 +58,8 @@ class AdminQameraAjaxController extends ModuleAdminController
      * (core) domain, so module strings are resolved explicitly here instead —
      * keeping every AJAX error message PL/EN-translatable.
      *
-     * @param string $string Source string (Polish).
+     * @param string $string source string (Polish)
+     *
      * @return string
      */
     private function t($string)
@@ -87,6 +89,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Stable shop->Qamera mapping key for a product (mirrors the module).
      *
      * @param int $idProduct
+     *
      * @return string
      */
     private function buildExternalRef($idProduct)
@@ -99,6 +102,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * in the body so the browser reads a readable message immediately.
      *
      * @param array $payload
+     *
      * @return void
      */
     private function json(array $payload)
@@ -112,6 +116,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Translate a QameraApiException into a JSON error response.
      *
      * @param QameraApiException $e
+     *
      * @return void
      */
     private function apiError(QameraApiException $e)
@@ -321,9 +326,10 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Verify $assetId is a packshot of the product (enforces the §3 hard rule).
      *
      * @param QameraApiClient $client
-     * @param string          $externalRef
-     * @param string          $assetId
-     * @return string ok | not_packshot | unknown (API unreachable — let backend gate).
+     * @param string $externalRef
+     * @param string $assetId
+     *
+     * @return string ok | not_packshot | unknown (API unreachable — let backend gate)
      */
     private function assertProductPackshot(QameraApiClient $client, $externalRef, $assetId)
     {
@@ -347,6 +353,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Collect every job id from a SubmitJobResponse (one per requested image).
      *
      * @param array $res
+     *
      * @return array
      */
     private function allJobIds(array $res)
@@ -373,8 +380,9 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Persist the product -> Qamera session mapping (ps_qamera_order). Best
      * effort — the source of truth for state stays the API.
      *
-     * @param int    $idProduct
+     * @param int $idProduct
      * @param string $orderId
+     *
      * @return void
      */
     private function saveOrderMapping($idProduct, $orderId)
@@ -395,6 +403,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * id_image is invalid or the file is missing.
      *
      * @param int $idImage
+     *
      * @return string
      */
     private function localImagePath($idImage)
@@ -413,7 +422,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * _PS_PROD_IMG_DIR_ is not guaranteed to be defined in this AJAX controller
      * context on PrestaShop 9, so fall back to the known img/p/ location.
      *
-     * @return string Trailing-slash directory path.
+     * @return string trailing-slash directory path
      */
     private function productImageDir()
     {
@@ -435,13 +444,15 @@ class AdminQameraAjaxController extends ModuleAdminController
      * row to the PrestaShop id_image: ps-{id_product}-img-{id_image}.
      *
      * @param QameraApiClient $client
-     * @param string          $externalRef Product external_ref (ps-{id_product}).
-     * @param int             $idProduct
-     * @param int             $idImage     PrestaShop gallery image id.
-     * @param string          $filePath    Absolute path to the gallery file.
-     * @param string          $sha         sha256 of the file.
-     * @param bool            $asPackshot  true => register as packshot, false => as image.
+     * @param string $externalRef product external_ref (ps-{id_product})
+     * @param int $idProduct
+     * @param int $idImage prestaShop gallery image id
+     * @param string $filePath absolute path to the gallery file
+     * @param string $sha sha256 of the file
+     * @param bool $asPackshot true => register as packshot, false => as image
+     *
      * @return string asset_id
+     *
      * @throws QameraApiException
      */
     private function ensureCatalogAsset(QameraApiClient $client, $externalRef, $idProduct, $idImage, $filePath, $sha, $asPackshot)
@@ -466,9 +477,11 @@ class AdminQameraAjaxController extends ModuleAdminController
      * sha256 (Configuration-backed dedup).
      *
      * @param QameraApiClient $client
-     * @param string          $filePath
-     * @param string          $sha
+     * @param string $filePath
+     * @param string $sha
+     *
      * @return string asset_id
+     *
      * @throws QameraApiException
      */
     private function ensureUploadedAsset(QameraApiClient $client, $filePath, $sha)
@@ -516,6 +529,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Shared handler for the two per-image registration actions.
      *
      * @param bool $asPackshot
+     *
      * @return void
      */
     private function registerGalleryImage($asPackshot)
@@ -563,15 +577,16 @@ class AdminQameraAjaxController extends ModuleAdminController
      * the PHP execution window.
      *
      * @param QameraApiClient $client
-     * @param string          $externalRef
-     * @param string          $assetId
-     * @return string One of: described | error | pending (last seen state).
+     * @param string $externalRef
+     * @param string $assetId
+     *
+     * @return string one of: described | error | pending (last seen state)
      */
     private function waitForDescribed(QameraApiClient $client, $externalRef, $assetId)
     {
         $last = 'pending';
 
-        for ($attempt = 0; $attempt < self::ANALYSIS_MAX_ATTEMPTS; $attempt++) {
+        for ($attempt = 0; $attempt < self::ANALYSIS_MAX_ATTEMPTS; ++$attempt) {
             try {
                 $product = $client->get_product($externalRef);
             } catch (QameraApiException $e) {
@@ -647,6 +662,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Human-readable product name for the subject label.
      *
      * @param int $idProduct
+     *
      * @return string
      */
     private function productLabel($idProduct)
@@ -670,6 +686,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Extract the first job id from a SubmitJobResponse.
      *
      * @param array $res
+     *
      * @return string
      */
     private function firstJobId(array $res)
@@ -802,9 +819,10 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Dedup by sha256 of the bytes (ps_qamera_import). Generates the configured
      * product image thumbnails so the image renders in admin + storefront.
      *
-     * @param int    $idProduct
+     * @param int $idProduct
      * @param string $jobId
      * @param string $url
+     *
      * @return array{ok: bool, id_image?: int, duplicate?: bool, error?: string}
      */
     private function importOutputToGallery($idProduct, $jobId, $url)
@@ -886,6 +904,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * the body bytes, or '' on any transport / non-2xx error.
      *
      * @param string $url
+     *
      * @return string
      */
     private function downloadUrl($url)
@@ -944,6 +963,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Shared accept/reject handler.
      *
      * @param string $vote accept|reject
+     *
      * @return void
      */
     private function voteJob($vote)
@@ -975,6 +995,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * First signed output URL among a job's outputs, or ''.
      *
      * @param array $job
+     *
      * @return string
      */
     private function firstOutputUrl(array $job)
@@ -995,6 +1016,7 @@ class AdminQameraAjaxController extends ModuleAdminController
      * Readable last-error message from a job's error envelope, or ''.
      *
      * @param array $job
+     *
      * @return string
      */
     private function jobErrorMessage(array $job)

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -13,7 +14,7 @@
  * @copyright Since 2026 200IQ Labs
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-/**
+/*
  * Qamera AI for PrestaShop — catalog cache.
  *
  * Slow-changing catalog data (presets, models, sceneries, ai-models) is fetched
@@ -34,20 +35,21 @@ if (!defined('_PS_VERSION_')) {
 class QameraCatalogCache
 {
     /** @var int Default TTL in seconds (15 minutes). */
-    const TTL = 900;
+    public const TTL = 900;
 
     /** @var string Configuration key prefix. */
-    const PREFIX = 'QAMERA_CACHE_';
+    public const PREFIX = 'QAMERA_CACHE_';
 
     /**
      * Return cached value for $key if fresh, else run $loader, cache, return.
      * The loader may throw (e.g. QameraApiException) — the throw propagates and
      * nothing is cached, so the next call retries.
      *
-     * @param string   $key    Logical cache key (namespaced internally).
-     * @param callable $loader Produces the value to cache when stale/missing.
-     * @param int      $ttl    Seconds the value stays fresh.
-     * @return mixed Cached or freshly loaded value.
+     * @param string $key logical cache key (namespaced internally)
+     * @param callable $loader produces the value to cache when stale/missing
+     * @param int $ttl seconds the value stays fresh
+     *
+     * @return mixed cached or freshly loaded value
      */
     public static function remember($key, callable $loader, $ttl = self::TTL)
     {
@@ -79,6 +81,7 @@ class QameraCatalogCache
      * Drop a cached entry (e.g. after a settings change invalidates the key).
      *
      * @param string $key
+     *
      * @return void
      */
     public static function forget($key)
@@ -90,6 +93,7 @@ class QameraCatalogCache
      * Normalize a logical key into a safe, bounded Configuration name.
      *
      * @param string $key
+     *
      * @return string
      */
     private static function cfgKey($key)

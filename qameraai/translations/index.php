@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -13,7 +14,7 @@
  * @copyright Since 2026 200IQ Labs
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-/**
+/*
  * Qamera AI for PrestaShop.
  *
  * Silence is golden — block direct directory access.

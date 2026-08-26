@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2026 200IQ Labs and Contributors
  *
@@ -14,7 +15,7 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{qameraai}prestashop>qameraai_1ed1bac6999cbe6a736133f4a53bf6dd'] = 'Qamera AI for PrestaShop';
 $_MODULE['<{qameraai}prestashop>qameraai_459b4d8ed43ed20bf471b9858f8f3b88'] = 'Generuj packshoty i sesje produktowe Qamera AI z karty produktu i publikuj zatwierdzone wyniki w galerii.';
 $_MODULE['<{qameraai}prestashop>qameraai_6ce1a35501ace70018557dca4c90b7bd'] = 'Czy na pewno usunąć moduł Qamera AI? Lokalne mapowania ID zostaną usunięte (stan generacji pozostaje w Qamera AI).';
