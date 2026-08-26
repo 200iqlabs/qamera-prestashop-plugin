@@ -478,9 +478,13 @@ Objaw poboczny, który potrafi zmylić: w zakładce **ładowały się tylko obra
 przez `localhost`. Sprawdzone, że same adresy są poprawne: `/1-home_default/…jpg` z właściwym
 nagłówkiem `Host` zwraca `200 image/jpeg`. **Moduł jest w porządku.**
 
-Naprawa, która zadziałała: `docker compose --profile ps9 down` + `up -d` (bez `-v`, dane
-zostają) — przeładowanie kontenera odtwarza relay. Samo `stop`/`start` nie wystarczy; to
-właśnie cykle `stop`/`start` ten stan produkują.
+Naprawa, która działa: `docker compose --profile ps9 up -d --force-recreate ps9` (bez `-v`,
+dane zostają) — przeładowanie kontenera odtwarza relay. Samo `stop`/`start` nie wystarczy.
+
+Co ten stan **produkuje**, potwierdzone dwukrotnie: cykle `stop`/`start` oraz `docker compose
+down` na jednym profilu, kiedy drugi korzysta z tej samej sieci — teardown sieci osierocił
+relay także dla działającego kontenera drugiego profilu. Praktycznie: **nie ruszaj jednego
+profilu, kiedy drugi ma działać**, a jeśli już — zrekreuj kontener, nie restartuj.
 
 ### PrestaShop 8 — **nie zweryfikowany na bieżącym kodzie**
 
