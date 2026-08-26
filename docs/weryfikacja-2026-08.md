@@ -393,3 +393,49 @@ PHPStan dla modułów. Uruchomione lokalnie, bez konta.
 - Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy
   większym ruchu.
+
+---
+
+## 8. Droga zgłoszenia na Addons — co dalej z paczką
+
+Ustalone z dokumentacji PrestaShopa 2026-08-26. Zebrane tu, bo nikt nie powinien tego
+odkrywać po raz drugi.
+
+**Paczka:** `qameraai.zip` w katalogu głównym repozytorium (nietrackowana, budowana przez
+`php tools/build-zip.php`).
+
+**Gdzie:** konto sprzedawcy na `https://addons.prestashop.com/en/login` — to samo konto
+PrestaShop Account, którym loguje się do walidatora. Ścieżka: **Products → wybierz moduł →
+„Click here to add a zip"**.
+
+**Opłata:** roczna opłata walidacyjna **99 €** przed zgłoszeniem. Pokrywa dowolną liczbę
+podejść w danym roku; limit to **3 zgłoszenia dziennie**.
+
+**Kolejność jest odwrotna, niż się wydaje: najpierw strona produktu, potem paczka.** Strona
+wymaga:
+
+- ikony **57×57** (JPEG/PNG/GIF) — osobnej od `logo.png` modułu,
+- **minimum 3 zrzutów ekranu** (zalecany format kwadratowy),
+- krótkiego opisu, listy funkcji, **co najmniej jednej korzyści dla sklepikarza i jednej dla
+  jego klienta**,
+- **minimum 5 słów kluczowych na każdy zadeklarowany język**,
+- listy krajów.
+
+**Twarda reguła treści:** na stronie produktu **ani w dokumentacji** nie wolno podać własnego
+adresu e-mail ani adresu strony. Dlatego `qamera.ai` zniknęło z tekstów modułu (sekcja 4) —
+zostaje sama nazwa usługi.
+
+**Etapy po wysłaniu:**
+
+| Etap | Co się dzieje | Ile trwa |
+|---|---|---|
+| 1 | Automat: ten sam walidator, potem głębsze skanowanie (PrestaShop Compliance Service — podatności, zgodność wersji PHP). Raport PDF ląduje na koncie sprzedawcy. | od razu do 24 h |
+| 2 | Przegląd techniczny przez człowieka: jakość kodu, architektura, wydajność, testy funkcjonalne. | 5–10 dni roboczych |
+| 3 | Przegląd marketingowy: prezentacja produktu, zrzuty, dokumentacja, brak nieautoryzowanych marek i odsyłaczy. | do 10 dni roboczych na każdy język |
+
+Odrzucenie na dowolnym etapie wraca z konkretnym uzasadnieniem i można poprawić i zgłosić
+ponownie.
+
+**Do zapamiętania:** od **1 lutego 2026** aktualizacja produktu jest odrzucana, jeśli produkt
+nie jest już zgodny z najnowszą wersją PrestaShopa. To argument, żeby `ps_versions_compliancy`
+nie zostawiać w tyle za wydaniami 9.x.
