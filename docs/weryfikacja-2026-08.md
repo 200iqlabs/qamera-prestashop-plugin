@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| Sklep | PrestaShop **9.1.4**, `docker-compose.yml` tego repo, profil `ps9`, `http://localhost:8091` |
+| Sklep | PrestaShop **9.1.4** (profil `ps9`, `http://localhost:8091`) — pełny przebieg; PrestaShop **8.2.7** (profil `ps8`, `http://localhost:8082`) — kontrola odczytowa. Oba z `docker-compose.yml` tego repo |
 | Moduł | `qameraai` 1.0.0, aktywny, montowany na żywo z `./qameraai` |
 | API | `https://qamera.ai` (produkcja), konto testowe `PL` (`0b5d8195-24a8-4c27-9ed3-5b4fd891b293`) |
 | Kredyty | 6160 na starcie; sesja zużyła ~30 (3 zadania po 10) |
@@ -122,12 +122,28 @@ wybrany bo nie miał żadnego stanu po stronie Qamery — cały przebieg widać 
 W całym module nie ma ani jednego odwołania do webhooka, HMAC-a czy publicznego endpointu.
 To celowa różnica względem wtyczki WooCommerce i zgadza się z `CLAUDE.md` oraz §6 PRD.
 
+### PrestaShop 8 — sprawdzone częściowo
+
+Na **PrestaShop 8.2.7** (profil `ps8`, `http://localhost:8082`, produkt 20) wykonano tylko
+kontrolę odczytową, bez generacji: zakładka renderuje się, a stan odtwarza się z API zgodnie
+z tym, co konto Qamery ma dla `ps-20` — 1 przycisk generacji packshotu, 3 przyciski sesji,
+2 przyciski akceptacji wyniku sesji, żadnego komunikatu błędu.
+
+Uwaga o trasie: PrestaShop 8.2 trzyma kartę produktu pod `sell/catalog/products-v2/{id}/edit`,
+PrestaShop 9 pod `sell/catalog/products/{id}/edit`. Moduł nie zależy od trasy (podpina się
+hookiem), ale każdy skrypt sterujący panelem musi to rozróżniać.
+
+W konsoli przeglądarki pojawiły się `ERR_CONNECTION_RESET` na zasobach panelu i wtórne
+`jQuery is not defined`. To kontener PS8 gubił połączenia pod obciążeniem tej maszyny, nie
+moduł: JS modułu nie ma ani jednego odwołania do jQuery, a zakładka wyrenderowała się
+i pokazała komplet przycisków. Kontener PS8 dwukrotnie w trakcie sesji przestawał przyjmować
+połączenia i wymagał restartu.
+
 ### Czego **nie** uruchomiono
 
-- **Core Flow na PrestaShop 8** — kontener wstał i sklep odpowiadał, ale pełnego przebiegu na
-  nim nie wykonano (zatrzymany, by nie obciążać maszyny w trakcie generacji na PS9).
-  Ostatni żywy przebieg na PS8: 2026-06-13 (log w `goals.md`). Deklaracja zgodności z 8.x
-  opiera się więc na czerwcowym teście, nie na dzisiejszym.
+- **Pełny Core Flow na PrestaShop 8** — tylko render + odtworzenie stanu (wyżej). Ostatni
+  żywy przebieg z generacją na PS8: 2026-06-13 (log w `goals.md`). Deklaracja zgodności
+  z 8.x opiera się więc na czerwcowym teście generacji plus dzisiejszej kontroli odczytowej.
 - **Ścieżka `reject`** (`POST /jobs/{id}/reject`) — endpoint istnieje i jest wołany przez ten sam
   kod co `accept`, ale w tej sesji nie kliknięto go w panelu.
 - **`DELETE /packshots/{idOrRef}`** — nie uruchomiony.
@@ -251,8 +267,9 @@ Zebrane z listy kontrolnej PrestaShop, nie z listy własnej.
 
 ### `ps_versions_compliancy`
 
-Zadeklarowane `8.0.0` – `9.99.99`. Dolna granica ma pokrycie w teście z czerwca (PS 8.x),
-górna nie: dziś moduł przeszedł pełny przebieg na **9.1.4**. `9.99.99` to konwencja
+Zadeklarowane `8.0.0` – `9.99.99`. Dolna granica ma pokrycie: generacja na PS 8.x w czerwcu
+plus dzisiejsza kontrola odczytowa na **8.2.7**. Górna nie: dziś moduł przeszedł pełny
+przebieg na **9.1.4**, i tyle wiadomo. `9.99.99` to konwencja
 PrestaShopowa i nie wywoła błędu walidatora, ale jest deklaracją na przyszłe wydania 9.x,
 a nie stwierdzeniem faktu. Zostawiam bez zmiany — obniżanie górnej granicy przy każdym
 wydaniu 9.x oznaczałoby wypuszczanie aktualizacji modułu tylko po to, żeby ją podnieść.
@@ -272,6 +289,6 @@ Nie uruchomione w tej sesji.
 - Wysyłka pakietu do walidatora PrestaShop.
 - `logo.png`, `module_key`, `docs/` w module, angielskie teksty źródłowe.
 - `9:16` na liście proporcji.
-- Pełny Core Flow na PrestaShop 8 (dziś tylko PS9).
+- Pełny Core Flow z generacją na PrestaShop 8 (dziś tylko render + odczyt stanu).
 - Synchroniczne czekanie na analizę zdjęcia trzyma proces Apache — do przemyślenia przy
   większym ruchu.
