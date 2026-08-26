@@ -400,8 +400,7 @@ class QameraApiClient
 
         $decoded = json_decode((string) $raw, true);
 
-        // API error envelope: { error: { code, message_i18n } }
-        if (is_array($decoded) && isset($decoded['error']) && is_array($decoded['error'])) {
+        if (self::isErrorEnvelope($decoded, $status)) {
             $err = $decoded['error'];
             $code = isset($err['code']) ? (string) $err['code'] : 'api_error';
             $message = self::extractMessage($err, $status);
@@ -494,7 +493,7 @@ class QameraApiClient
 
         $decoded = json_decode((string) $raw, true);
 
-        if (is_array($decoded) && isset($decoded['error']) && is_array($decoded['error'])) {
+        if (self::isErrorEnvelope($decoded, $status)) {
             $err = $decoded['error'];
             $code = isset($err['code']) ? (string) $err['code'] : 'api_error';
             $message = self::extractMessage($err, $status);
@@ -518,6 +517,30 @@ class QameraApiClient
         }
 
         return $decoded;
+    }
+
+    /**
+     * Whether a decoded body is the API error envelope rather than a successful
+     * payload.
+     *
+     * The envelope is the WHOLE body — ErrorEnvelope declares `error` and
+     * nothing else — and it always arrives with a 4xx/5xx status. A successful
+     * Job DTO also carries an `error` property (the last generation failure,
+     * null when none), so matching on the key alone turned every `failed` /
+     * `retry_pending` job into a thrown transport error and hid the job's real
+     * status from the poller.
+     *
+     * @param mixed $decoded Decoded JSON body.
+     * @param int   $status  HTTP status code.
+     * @return bool
+     */
+    private static function isErrorEnvelope($decoded, $status)
+    {
+        if (!is_array($decoded) || !isset($decoded['error']) || !is_array($decoded['error'])) {
+            return false;
+        }
+
+        return ($status >= 400) || (count($decoded) === 1);
     }
 
     /**

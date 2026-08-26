@@ -1001,9 +1001,12 @@ class Qameraai extends Module
                 $byId[$jobId] = $job;
             }
 
-            // Scope to this product.
+            // Scope to this product. GET /jobs is installation-wide, so this is
+            // the only thing keeping another product's session off this tab —
+            // it matches exactly, and a job whose product_ref is null (legacy
+            // jobs, per the API contract) is dropped rather than let through.
             $productRef = isset($job['product_ref']) && $job['product_ref'] !== null ? (string) $job['product_ref'] : '';
-            if ($externalRef !== '' && $productRef !== '' && $productRef !== $externalRef) {
+            if ($productRef !== $externalRef) {
                 continue;
             }
 
