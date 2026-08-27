@@ -67,6 +67,48 @@ and sends back fewer parcels.
 `product photography`, `packshot`, `product images`, `photo studio`, `photo shoot`,
 `catalog images`, `model photos`, `product visuals`
 
+### What are the main steps to install your module?
+
+1. Upload `qameraai.zip` in **Modules → Module Manager → Upload a module**, or copy the
+   `qameraai` folder into your shop's `modules/` directory and install it from the list.
+2. Open **Configure** on the module.
+3. Paste your Qamera AI plugin API key and save. The page then shows your account name, plan
+   and credit balance — that is how you know the key works.
+4. Choose an **AI model** and save. This step is required; generation stays blocked until a
+   model is selected.
+5. Open any product and go to its **Qamera AI** tab. That is where the whole flow happens.
+
+A short illustrated guide ships inside the module, in `docs/`, in English and Polish.
+
+### What are your module prerequisites?
+
+- PrestaShop 8.0 or newer, or 9.x.
+- PHP 7.4 or newer with the **cURL** extension enabled.
+- Your shop must be able to make **outgoing HTTPS requests** — the module talks to the
+  Qamera AI API from the server, never from the browser.
+- An **active Qamera AI account with credits**, and a plugin API key generated on it.
+  Generation runs on that account and consumes its credits.
+
+No cron job, no queue and no publicly reachable callback address are needed. The module
+collects results by polling, so it works on shops behind a firewall.
+
+### Anything to add?
+
+**Nothing reaches your shop until you accept it.** Every packshot and every session image is
+reviewed by you first; rejecting one removes it, accepting one publishes it into the product
+gallery. Accepting the same result twice never creates a duplicate.
+
+**Your shop's database stays thin.** The module stores only two small mapping tables of
+identifiers. The state of every generation — status, approval, which packshot a session came
+from — lives in your Qamera AI account, so reloading the product page is safe at any moment
+and never loses a result.
+
+**Deliberate limits of this version**, stated plainly so nobody buys the wrong thing: no
+generation across many products at once, no per-combination images, no multistore, and no
+editing or regenerating a finished result. Interface in Polish and English.
+
+Support runs through the PrestaShop Addons marketplace.
+
 ---
 
 ## Polski
@@ -122,6 +164,49 @@ paczkę.
 `zdjęcia produktowe`, `packshot`, `sesja zdjęciowa`, `fotografia produktowa`,
 `zdjęcia do sklepu`, `katalog produktów`, `zdjęcia na modelce`, `wizualizacje produktu`
 
+### Jak zainstalować moduł — główne kroki
+
+1. Wgraj `qameraai.zip` w **Moduły → Menedżer modułów → Wgraj moduł**, albo skopiuj katalog
+   `qameraai` do `modules/` w sklepie i zainstaluj z listy.
+2. Kliknij **Konfiguruj** przy module.
+3. Wklej klucz API wtyczki Qamera AI i zapisz. Strona pokaże wtedy nazwę konta, plan i saldo
+   kredytów — po tym poznajesz, że klucz działa.
+4. Wybierz **model AI** i zapisz. Ten krok jest wymagany; bez wybranego modelu generacja
+   pozostaje zablokowana.
+5. Wejdź na dowolny produkt i otwórz zakładkę **Qamera AI**. Tam dzieje się cały przebieg.
+
+Krótka instrukcja jedzie w module, w katalogu `docs/`, po polsku i po angielsku.
+
+### Czego moduł wymaga
+
+- PrestaShop 8.0 lub nowszy, albo 9.x.
+- PHP 7.4 lub nowszy z włączonym rozszerzeniem **cURL**.
+- Sklep musi móc wykonywać **połączenia wychodzące HTTPS** — moduł rozmawia z API Qamera AI
+  z serwera, nigdy z przeglądarki.
+- **Aktywne konto Qamera AI z kredytami** i wygenerowany na nim klucz API wtyczki. Generacja
+  odbywa się na tym koncie i zużywa jego kredyty.
+
+Nie trzeba crona, kolejki ani publicznie dostępnego adresu zwrotnego. Moduł odbiera wyniki
+odpytywaniem, więc działa też w sklepie schowanym za zaporą.
+
+### Co jeszcze warto wiedzieć
+
+**Nic nie trafia do sklepu, dopóki tego nie zatwierdzisz.** Każdy packshot i każde zdjęcie
+z sesji najpierw oglądasz: odrzucenie usuwa je, zatwierdzenie publikuje w galerii produktu.
+Ponowne zatwierdzenie tego samego wyniku nigdy nie utworzy duplikatu.
+
+**Baza sklepu zostaje lekka.** Moduł trzyma u siebie tylko dwie niewielkie tabele z
+identyfikatorami. Stan każdej generacji — status, akceptacja, z którego packshota powstała
+sesja — żyje na koncie Qamera AI, więc odświeżenie karty produktu jest bezpieczne w dowolnym
+momencie i nigdy nie gubi wyniku.
+
+**Świadome granice tej wersji**, powiedziane wprost, żeby nikt nie kupił nie tego, czego
+szukał: brak generacji dla wielu produktów naraz, brak zdjęć dla poszczególnych wariantów,
+brak obsługi wielu sklepów, brak edycji i ponownej generacji gotowego wyniku. Interfejs po
+polsku i po angielsku.
+
+Wsparcie prowadzimy przez marketplace PrestaShop Addons.
+
 ---
 
 ## Pozostałe pola formularza
@@ -135,6 +220,22 @@ paczkę.
 | Kraje | wszystkie — usługa nie jest ograniczona terytorialnie |
 | Kompatybilność | PrestaShop 8.0.0 – 9.99.99 |
 | Kategoria | **Content management** — jedyna pasująca w ich liście (Product Page nie było w ofercie) |
+
+## Wideo — świadomie odpuszczone przy pierwszym zgłoszeniu
+
+Pole „Any video demonstration of your product to share?" zostaje puste.
+
+Da się je zrobić: przebieg jest sterowalny skryptem, więc nagranie ekranu z prawdziwej sesji
+jest wykonalne. Problem jest w treści, nie w narzędziu — **generacja packshota i sesji trwa
+po kilka minut**, więc surowe nagranie to w większości ekran, na którym nic się nie dzieje.
+Użyteczne wideo wymaga wycięcia oczekiwania i przyspieszenia, czyli osobnej roboty
+montażowej, a przy okazji kolejnych kredytów na ponowną generację.
+
+Wobec ustalenia „publikujemy w obecnym stanie" nie warto tym blokować startu. **Uwaga na
+koszt dołożenia go później:** każda zmiana treści listingu to kolejna runda przeglądu
+marketingowego, do 10 dni roboczych na język. Jeśli wideo ma być w pierwszym zgłoszeniu,
+trzeba je zrobić teraz — inaczej wchodzi razem z jakąś następną aktualizacją, kiedy listing
+już żyje i widać, czy w ogóle łapie ruch.
 
 ## Czego świadomie nie ma w tych tekstach
 
