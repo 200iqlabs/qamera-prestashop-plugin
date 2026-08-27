@@ -257,6 +257,54 @@ już żyje i widać, czy w ogóle łapie ruch.
 - **Ceny za wygenerowane zdjęcie** — model kredytowy żyje po stronie konta Qamery i zmiana
   cennika unieważniłaby opis, a każda zmiana tekstu to kolejny przegląd.
 
+## Message to Addons Team
+
+> Tak, mamy im co powiedzieć — i to jest najważniejsze pole w całym formularzu, bo bez niego
+> recenzent **nie ma jak przetestować modułu**. Wtyczka bez konta z kredytami pokazuje pustą
+> zakładkę; recenzent zobaczy ekran ustawień i nic więcej, a to prosta droga do odrzucenia
+> albo do rundy pytań.
+>
+> Wstaw klucz w miejsce `<API KEY>` przed wysłaniem.
+
+```text
+Hello,
+
+This module is a client for Qamera AI, an external image-generation service. It cannot be
+tested without an account, so we have prepared one for you:
+
+  API key: <API KEY>
+  Credits loaded: 300 (enough for roughly 30 generated images)
+
+Paste it in Modules → Qamera AI → Configure, pick any AI model from the dropdown, save, then
+open any product and use its "Qamera AI" tab.
+
+Three things that may look like faults but are intended:
+
+1. Generation takes time. A packshot needs about one to three minutes, a session longer. The
+   tab polls for the result and updates itself — there is no cron task and no public callback
+   endpoint to configure, which is deliberate: the module works on shops behind a firewall.
+
+2. A session can only be generated from an accepted packshot, never straight from a source
+   photo. Trying the latter is refused on purpose — the packshot is what keeps results
+   consistent across a catalogue.
+
+3. The service is tuned for swimwear and lingerie. Other product categories generally work,
+   but the visual quality is at its best in that category, so please judge the output with
+   that in mind.
+
+Nothing is written to the shop until the merchant accepts a result, and the module stores no
+generated content locally — only two small tables mapping identifiers.
+
+Documentation in English and Polish ships in the module, in docs/.
+
+Thank you for your time.
+```
+
+**Do zrobienia przed wysłaniem:** wygenerować klucz na **osobnym koncie**, nie na naszym
+produkcyjnym. Aktywność recenzenta zostaje wtedy poza naszym katalogiem, a klucz można
+unieważnić po zakończeniu walidacji. 300 kredytów wystarczy na przebieg z zapasem na kilka
+podejść.
+
 ## Kompatybilność — dlaczego nie 9.2.0
 
 Deklarujemy **8.0.0 – 9.1.x**, bo tyle naprawdę sprawdziliśmy: pełny przebieg generacji na
