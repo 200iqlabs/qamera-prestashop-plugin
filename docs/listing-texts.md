@@ -129,10 +129,11 @@ paczkę.
 | Pole | Wartość |
 |---|---|
 | Ikona 57×57 | `docs/listing-assets/icon-57.png` |
-| Zrzuty ekranu | minimum 3 — zakładka na karcie produktu, panel ustawień sesji, ekran konfiguracji |
+| Zrzuty ekranu | pięć w `docs/listing-assets/` |
+| Tytuł listingu | EN `Qamera AI — product photos and packshots` · PL `Qamera AI — zdjęcia produktowe i packshoty` |
 | Kraje | wszystkie — usługa nie jest ograniczona terytorialnie |
 | Kompatybilność | PrestaShop 8.0.0 – 9.99.99 |
-| Kategoria | administracja / zdjęcia produktów |
+| Kategoria | **Product Page** (Strona produktu). Zapasowo: Administration tools |
 
 ## Czego świadomie nie ma w tych tekstach
 
