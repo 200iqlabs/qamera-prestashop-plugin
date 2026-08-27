@@ -14,21 +14,27 @@ const { chromium } = require('playwright');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const src = path.join(root, 'qameraai', 'docs', 'user-guide.html');
-const out = path.join(root, 'qameraai', 'docs', 'user-guide.pdf');
+const guides = [
+  { src: 'user-guide.html', out: 'user-guide.pdf' },
+  { src: 'user-guide-pl.html', out: 'user-guide-pl.pdf' },
+];
 
 (async () => {
   const browser = await chromium.launch({ headless: true, channel: process.env.PW_CHANNEL || undefined });
   const page = await browser.newPage();
-  await page.goto('file://' + src.replace(/\\/g, '/'), { waitUntil: 'networkidle' });
-  await page.pdf({
-    path: out,
-    format: 'A4',
-    printBackground: true,
-    margin: { top: '18mm', bottom: '18mm', left: '16mm', right: '16mm' },
-  });
+  for (const guide of guides) {
+    const src = path.join(root, 'qameraai', 'docs', guide.src);
+    const out = path.join(root, 'qameraai', 'docs', guide.out);
+    await page.goto('file://' + src.replace(/\\/g, '/'), { waitUntil: 'networkidle' });
+    await page.pdf({
+      path: out,
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '18mm', bottom: '18mm', left: '16mm', right: '16mm' },
+    });
+    console.log('built:', out);
+  }
   await browser.close();
-  console.log('built:', out);
 })().catch(function (e) {
   console.error('doc build failed:', e.message);
   process.exit(1);

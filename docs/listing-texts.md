@@ -129,11 +129,12 @@ paczkę.
 | Pole | Wartość |
 |---|---|
 | Ikona 57×57 | `docs/listing-assets/icon-57.png` |
-| Zrzuty ekranu | pięć w `docs/listing-assets/` |
+| Zrzuty ekranu | **`docs/listing-assets/upload/`** — przeskalowane do zakresu, którego wymaga formularz (1000×1000 – 2000×2000). Oryginały w pełnej rozdzielczości leżą katalog wyżej |
+| Instrukcja PDF | `qameraai/docs/user-guide.pdf` (EN) i `user-guide-pl.pdf` (PL) — jedzie też w paczce |
 | Tytuł listingu | EN `Qamera AI — product photos and packshots` · PL `Qamera AI — zdjęcia produktowe i packshoty` |
 | Kraje | wszystkie — usługa nie jest ograniczona terytorialnie |
 | Kompatybilność | PrestaShop 8.0.0 – 9.99.99 |
-| Kategoria | **Product Page** (Strona produktu). Zapasowo: Administration tools |
+| Kategoria | **Content management** — jedyna pasująca w ich liście (Product Page nie było w ofercie) |
 
 ## Czego świadomie nie ma w tych tekstach
 

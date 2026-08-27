@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Qamera AI for PrestaShop — instrukcja</title>
+<style>
+  /* Źródło dla docs/user-guide-pl.pdf. Generowanie: tools/build-docs.js. */
+  :root {
+    --graphite: #252b30;
+    --teal: #83babc;
+    --ink: #1a1a1a;
+    --rule: #e5e7eb;
+    --muted: #5b6266;
+  }
+  @page { size: A4; margin: 18mm 16mm; }
+  body {
+    font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 11pt;
+    margin: 0;
+  }
+  h1 { color: var(--graphite); font-size: 22pt; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 {
+    color: var(--graphite); font-size: 14pt; margin: 26px 0 8px;
+    padding-bottom: 5px; border-bottom: 2px solid var(--teal);
+  }
+  h3 { color: var(--graphite); font-size: 11.5pt; margin: 18px 0 4px; }
+  p, li { margin: 6px 0; }
+  ol, ul { padding-left: 20px; }
+  .lead { color: var(--muted); font-size: 11.5pt; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: 9pt; margin: 10px 0 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { border: 1px solid var(--rule); padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f7f9f9; color: var(--graphite); font-weight: 600; }
+  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 9.5pt; }
+  .rule-box {
+    border-left: 3px solid var(--teal); background: #f7fbfb;
+    padding: 8px 12px; margin: 12px 0;
+  }
+  .step { margin: 0 0 10px; }
+  .step b { color: var(--graphite); }
+  footer { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<h1>Qamera AI for PrestaShop</h1>
+<p class="lead">Generuj packshoty i sesje zdjęciowe z karty produktu, a zatwierdzone wyniki publikuj wprost w galerii produktu.</p>
+<p class="meta">Moduł <code>qameraai</code> 1.0.0 · PrestaShop 8.x i 9.x · Academic Free License 3.0</p>
+
+<h2>1. Co robi ten moduł</h2>
+<p>Moduł dokłada zakładkę <b>Qamera AI</b> na karcie produktu w panelu sklepu. Z tej jednej
+zakładki zamieniasz zdjęcie, które już masz, w czysty packshot, generujesz z niego sesję
+zdjęciową, przeglądasz wyniki i publikujesz w galerii te, które zatwierdzisz. Nie wychodzisz
+z panelu, a żadne zdjęcie nie trafia do sklepu, dopóki go nie zaakceptujesz.</p>
+<p>Generacja odbywa się na twoim koncie Qamera AI i zużywa jego kredyty. Moduł nie
+przechowuje u siebie żadnych wygenerowanych materiałów — stan każdego zadania odczytuje
+z Qamera AI, więc to, co widzisz w zakładce, jest zawsze tym, co usługa faktycznie ma.</p>
+
+<h2>2. Czego potrzebujesz przed startem</h2>
+<table>
+  <tr><th>Potrzebne</th><th>Skąd to wziąć</th></tr>
+  <tr><td>PrestaShop 8.0 lub nowszy, albo 9.x</td><td>twój sklep</td></tr>
+  <tr><td>PHP 7.4 lub nowszy z rozszerzeniem cURL</td><td>twój hosting</td></tr>
+  <tr><td>Konto Qamera AI z kredytami</td><td>twoja subskrypcja Qamera AI</td></tr>
+  <tr><td>Klucz API wtyczki, <code>mk_live_…</code></td><td>ustawienia twojego konta Qamera AI</td></tr>
+</table>
+
+<h2>3. Instalacja</h2>
+<ol>
+  <li>W panelu sklepu wejdź w <b>Moduły → Menedżer modułów → Wgraj moduł</b> i wskaż
+      <code>qameraai.zip</code>.</li>
+  <li>Kliknij <b>Konfiguruj</b> przy zainstalowanym module.</li>
+  <li>Wklej <b>klucz API</b> i zapisz. Strona pokaże wtedy nazwę konta, plan i saldo
+      kredytów — to potwierdza, że klucz działa.</li>
+  <li>Wybierz <b>model AI</b> i zapisz. Ten krok jest wymagany: bez wybranego modelu
+      generacja jest zablokowana.</li>
+  <li>Opcjonalnie wskaż <b>domyślny preset</b>, który będzie podpowiadany przy nowych sesjach.</li>
+</ol>
+<p>Pole <b>Adres API</b> zostaw bez zmian. Służy wyłącznie środowiskom deweloperskim.</p>
+
+<h2>4. Generowanie: sześć kroków</h2>
+
+<p class="step"><b>Krok 1 — dodaj zdjęcie do produktu.</b> Zwyczajnie, zakładką
+<b>Zdjęcia</b> w PrestaShopie. Moduł pracuje na zdjęciach, które są już w galerii produktu.</p>
+
+<p class="step"><b>Krok 2 — wskaż rolę zdjęcia.</b> Otwórz zakładkę <b>Qamera AI</b>.
+W sekcji <i>Zdjęcia produktu</i> wybierz zdjęcie i dodaj je albo jako <b>źródło</b>, z którego
+powstanie packshot, albo od razu jako gotowy <b>packshot</b>, jeśli ujęcie jest już czyste.</p>
+
+<p class="step"><b>Krok 3 — wygeneruj packshot.</b> Kliknij <b>Generuj packshot</b> przy
+zdjęciu źródłowym. Zdjęcie trafia do Qamera AI, zostaje przeanalizowane i powstaje z niego
+packshot. Trwa to do kilku minut; zakładka sama sprawdza stan i odświeża się, gdy wynik
+przyjdzie. Możesz zostawić stronę otwartą.</p>
+
+<p class="step"><b>Krok 4 — zatwierdź albo odrzuć packshot.</b> Zatwierdzony packshot staje
+się podstawą sesji zdjęciowych. Odrzucenie usuwa go z katalogu Qamera AI.</p>
+
+<p class="step"><b>Krok 5 — wygeneruj sesję.</b> Przy zatwierdzonym packshocie kliknij
+<b>Generuj sesję</b>. Panel ustawień po lewej rządzi całą sesją: preset stylu, modelka,
+sceneria, proporcje, liczba zdjęć i pole na własne wskazówki.</p>
+
+<div class="rule-box">
+  <b>Jedna reguła warta zapamiętania:</b> sesja zawsze powstaje z packshota, nigdy wprost ze
+  zdjęcia źródłowego. To celowe — packshot jest tym, co utrzymuje spójność wyników, więc
+  moduł odmówi sesji zleconej ze surowego zdjęcia.
+</div>
+
+<p class="step"><b>Krok 6 — opublikuj to, co ci się podoba.</b> Kliknij <b>Zatwierdź</b> pod
+zdjęciem z sesji, a trafi ono do galerii produktu i pokaże się w sklepie. Ponowne
+zatwierdzenie tego samego wyniku nigdy nie utworzy duplikatu.</p>
+
+<h2>5. Kredyty</h2>
+<p>Każde wygenerowane zdjęcie kosztuje kredyty na twoim koncie Qamera AI. Bieżące saldo
+widać na ekranie konfiguracji modułu. Gdy kredyty się skończą, generacja zatrzyma się
+z czytelnym komunikatem, a za to samo zadanie nie zapłacisz dwa razy — powtórzone zlecenie
+tej samej generacji jest rozpoznawane i nie obciąża konta ponownie.</p>
+
+<h2>6. Kiedy coś pójdzie nie tak</h2>
+<table>
+  <tr><th>Co widzisz</th><th>Co to znaczy</th></tr>
+  <tr><td>Brak klucza API…</td><td>Klucz nie został wpisany w konfiguracji modułu.</td></tr>
+  <tr><td>Nieprawidłowy lub nieautoryzowany klucz API…</td><td>Klucz jest błędny, unieważniony albo wygasł. Wygeneruj nowy na koncie Qamera AI.</td></tr>
+  <tr><td>Brak kredytów…</td><td>Doładuj konto i spróbuj ponownie.</td></tr>
+  <tr><td>Zbyt wiele żądań…</td><td>Limit zapytań. Odczekaj chwilę i spróbuj ponownie.</td></tr>
+  <tr><td>Błąd serwera Qamera AI…</td><td>Problem po stronie usługi. Nieudane generacje są ponawiane automatycznie; odśwież zakładkę, żeby zobaczyć bieżący stan.</td></tr>
+  <tr><td>Nie można połączyć się z Qamera AI…</td><td>Twój sklep nie może wykonać połączenia wychodzącego HTTPS. Sprawdź sieć serwera i czy rozszerzenie cURL jest włączone.</td></tr>
+  <tr><td>Generacja nie powiodła się…</td><td>Nie udało się wygenerować zdjęcia. Spróbuj z innym zdjęciem źródłowym — ostrym, dobrze doświetlonym, z produktem wypełniającym kadr.</td></tr>
+</table>
+<p>Zakładka zawsze odtwarza swój stan z Qamera AI, więc odświeżenie karty produktu jest
+bezpieczne w dowolnym momencie i nigdy nie gubi wyniku.</p>
+
+<h2>7. Czego moduł nie robi</h2>
+<p>Świadome granice tej wersji: brak generacji dla wielu produktów naraz, brak zdjęć dla
+poszczególnych wariantów produktu, brak obsługi wielu sklepów, brak edycji i ponownej
+generacji gotowego wyniku, brak publicznego adresu zwrotnego — wyniki odbiera sama zakładka.
+Języki interfejsu: polski i angielski.</p>
+
+<h2>8. Dane i prywatność</h2>
+<p>Moduł wysyła do Qamera AI tylko to, czego wymaga generacja: wybrane zdjęcie produktu,
+nazwę produktu i identyfikator wiążący wyniki z tym produktem. Klucz API przechowywany jest
+w konfiguracji sklepu i nigdy nie trafia do przeglądarki — każde wywołanie Qamera AI wykonuje
+serwer. Wygenerowane zdjęcia pobierane są do twojej galerii dopiero w chwili zatwierdzenia.
+Odinstalowanie modułu usuwa jego lokalne tabele mapujące; materiały już wygenerowane
+pozostają na koncie Qamera AI.</p>
+
+<h2>9. Wsparcie</h2>
+<p>Wsparcie prowadzimy przez marketplace PrestaShop Addons — skorzystaj z formularza
+kontaktowego na stronie modułu.</p>
+
+<footer>
+  Qamera AI for PrestaShop · moduł <code>qameraai</code> 1.0.0 · licencja Academic Free
+  License 3.0 (plik <code>LICENSE.md</code> w module).
+</footer>
+
+</body>
+</html>

@@ -619,3 +619,35 @@ UPDATE ps_shop_url SET domain='localhost:8091', domain_ssl='localhost:8091';
 UPDATE ps_configuration SET value='localhost:8091' WHERE name IN ('PS_SHOP_DOMAIN','PS_SHOP_DOMAIN_SSL');
 UPDATE ps_configuration SET value='1' WHERE name='PS_REWRITING_SETTINGS';"
 ```
+
+---
+
+## 12. Materiały listingu dociągnięte do wymogów formularza (2026-08-27)
+
+**Kategoria: `Content management`.** Lista kategorii na koncie sprzedawcy nie zawiera
+„Product Page", którą sugerowałem wcześniej na podstawie publicznej struktury sklepu Addons.
+Z tego, co formularz oferuje, ta jedna pasuje: moduł zarządza treścią produktu — jego
+zdjęciami. Poprawione w `listing-texts.md`.
+
+**Rozmiar zrzutów.** Formularz odrzuca obrazy poza zakresem **1000×1000 – 2000×2000**.
+Nasze wychodziły z przeglądarki w pełnej rozdzielczości (do 3200×2400), więc wszystkie pięć
+zostało przeskalowane i **wypełnione białym tłem** do dozwolonego zakresu —
+`docs/listing-assets/upload/`. Padding zamiast kadrowania: przycięcie decydowałoby za
+czytelnika, która część ekranu jest ważna. Oryginały zostają katalog wyżej.
+
+| Plik | Było | Jest |
+|---|---|---|
+| `screenshot-1-product-tab` | 2656×4100 | 1296×2000 |
+| `screenshot-2-session-settings` | 2656×454 | 2000×1000 |
+| `screenshot-3-results` | 2588×2060 | 2000×1592 |
+| `screenshot-4-configuration` | 2720×356 | 2000×1000 |
+| `screenshot-4b-configuration-full` | 3200×2400 | 2000×1500 |
+
+**Instrukcja PDF — nie trzeba jej zamawiać, jest od wczoraj.** `qameraai/docs/user-guide.pdf`,
+trzy strony w barwach marki: co moduł robi, wymagania, instalacja, sześć kroków generacji,
+kredyty, tabela komunikatów błędów, świadome granice wersji, dane i prywatność, wsparcie.
+Skoro listing idzie w dwóch językach, **doszła wersja polska** — `user-guide-pl.pdf`, ta sama
+treść i układ. Obie jadą w paczce (32 pliki), obie nadają się do załączenia w formularzu.
+
+Źródła w HTML leżą obok PDF-ów, a `tools/build-docs.js` renderuje teraz oba naraz — treść
+zostaje edytowalna i porównywalna w repo zamiast być zamrożona w binarce.
