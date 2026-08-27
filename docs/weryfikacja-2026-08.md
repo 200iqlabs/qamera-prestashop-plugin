@@ -514,3 +514,31 @@ obu wtyczek osłabiłoby tamten kanał bez żadnego powodu.
 
 Kroki, reguły i pozycje otwarte zebrane w czytelnej formie:
 <https://claude.ai/code/artifact/ba1c2a3b-4ba5-418f-99e1-08d58fe4a579>
+
+---
+
+## 10. Teksty listingu i zrzuty (2026-08-27)
+
+**Decyzja: startujemy z listingiem po angielsku i po polsku.** Kosztuje to drugi przegląd
+marketingowy (do 10 dni roboczych na język), ale polski sklepikarz to nasz naturalny pierwszy
+rynek, a interfejs wtyczki i tak jest polski.
+
+Gotowe teksty do skopiowania w formularz: [`listing-texts.md`](listing-texts.md) — krótki
+opis, opis długi, funkcje, korzyść dla sklepikarza i osobno dla jego klienta, po osiem słów
+kluczowych na język, plus pozostałe pola formularza. Trzymają się zakazu podawania adresu
+strony i e-maila, i unikają obietnic jakości, których nie umiemy w listingu udowodnić.
+
+**Zrzuty ekranu nadal niezrobione — piąte podejście, ta sama przyczyna.** Relay portu
+Dockera na tej maszynie rozpada się szybciej, niż trwa sesja przeglądarki: `localhost` gubi
+połączenie w trakcie przebiegu, nawet po świeżym `--force-recreate`. To nie jest problem
+wtyczki ani PrestaShopa (diagnoza w sekcji 9).
+
+Czego potrzeba, gdyby robić je ręcznie — trzy ekrany, w panelu PrestaShop 9:
+
+1. **Zakładka Qamera AI na karcie produktu** — produkt 1 ma pełny stan: zdjęcie źródłowe,
+   packshot i zatwierdzony wynik sesji.
+2. **Panel ustawień sesji** — preset, modelka, sceneria, proporcje, liczba.
+3. **Ekran konfiguracji modułu** — panel konta z saldem kredytów.
+
+Przed zrzutem warto ukryć pasek debugowy Symfony (tryb deweloperski), bo nie ma czego szukać
+w materiale marketingowym.
