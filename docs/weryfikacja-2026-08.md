@@ -542,3 +542,30 @@ Czego potrzeba, gdyby robić je ręcznie — trzy ekrany, w panelu PrestaShop 9:
 
 Przed zrzutem warto ukryć pasek debugowy Symfony (tryb deweloperski), bo nie ma czego szukać
 w materiale marketingowym.
+
+### Uwaga, która kosztowała czas: dwa katalogi, jeden compose
+
+`docker compose --profile ps9 …` uruchomione z `C:\Projects\qamera-prestashop` kończy się
+`no such service: ps9`. To ten drugi katalog — harness z innym modułem (sekcja „Uwaga
+o harnessie") — i jego `docker-compose.yml` nie ma takiej usługi.
+
+Poprawnie, z dowolnego miejsca:
+
+```
+docker compose -f C:\Projects\qamera-prestashop-plugin\docker-compose.yml --profile ps9 up -d --force-recreate ps9
+```
+
+### Zrzuty ekranu — jeden gotowy, dwa nadal nie
+
+Z szóstego podejścia wyszedł **panel ustawień sesji** (`screenshot-2-session-settings.png`) —
+czysty, bez paska debugowego, nadaje się do listingu. Nie ma na nim żadnego obrazka, więc
+awaria portu go nie dotknęła.
+
+Dwa pozostałe wychodzą z **szarymi prostokątami w miejscu zdjęcia źródłowego i packshota**,
+bo miniatury z galerii sklepu idą przez `localhost`, a ten w trakcie przebiegu znów przestaje
+odpowiadać. Wyniki generacji (hostowane zewnętrznie) ładują się normalnie — stąd obraz, na
+którym działa akurat to, co przyszło z Qamery, a nie działa to, co jest w sklepie. **Wygląda
+jak błąd modułu i nim nie jest**; adresy sprawdzone osobno, zwracają `200 image/jpeg`.
+
+Praktycznie: zaraz po `--force-recreate` sklep działa przez kilka minut. W tym oknie zrzuty
+wychodzą poprawnie — trzeba je zrobić od razu, a jeśli kafelki są szare, powtórzyć recreate.
