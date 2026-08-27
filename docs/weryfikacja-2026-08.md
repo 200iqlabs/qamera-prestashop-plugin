@@ -643,11 +643,37 @@ czytelnika, która część ekranu jest ważna. Oryginały zostają katalog wyż
 | `screenshot-4-configuration` | 2720×356 | 2000×1000 |
 | `screenshot-4b-configuration-full` | 3200×2400 | 2000×1500 |
 
-**Instrukcja PDF — nie trzeba jej zamawiać, jest od wczoraj.** `qameraai/docs/user-guide.pdf`,
+**Instrukcja PDF — nie trzeba jej zamawiać, jest od wczoraj.** `qameraai/docs/readme_en.pdf`,
 trzy strony w barwach marki: co moduł robi, wymagania, instalacja, sześć kroków generacji,
 kredyty, tabela komunikatów błędów, świadome granice wersji, dane i prywatność, wsparcie.
-Skoro listing idzie w dwóch językach, **doszła wersja polska** — `user-guide-pl.pdf`, ta sama
+Skoro listing idzie w dwóch językach, **doszła wersja polska** — `readme_pl.pdf`, ta sama
 treść i układ. Obie jadą w paczce (32 pliki), obie nadają się do załączenia w formularzu.
 
 Źródła w HTML leżą obok PDF-ów, a `tools/build-docs.js` renderuje teraz oba naraz — treść
 zostaje edytowalna i porównywalna w repo zamiast być zamrożona w binarce.
+
+---
+
+## 13. Nisza produktowa wpisana w materiały (2026-08-27)
+
+Usługa jest dostrojona pod **stroje kąpielowe i bieliznę** — to zwalidowany beachhead
+(`context/w1/bhc.md`, `context/w2/icp.md`, PMF potwierdzony z LAVEL). Teksty listingu tego
+nie mówiły i czytały się tak, jakby moduł był uniwersalny. Poprawione, bo to jednocześnie
+uczciwość i celowanie:
+
+- **krótki opis** w obu językach zaczyna się teraz od niszy — to on pokazuje się w wynikach
+  wyszukiwania, więc marka strojów kąpielowych rozpozna się w pierwszej linijce;
+- **opis długi** ma akapit ustawiający to jako specjalizację, nie ograniczenie („studio
+  wyspecjalizowane, nie ogólny generator obrazów"), z uczciwym zastrzeżeniem, że inne
+  kategorie zwykle działają, ale wymagają kilku podejść i dostrojenia ustawień sesji;
+- **słowa kluczowe** prowadzą teraz niszą: `swimwear photography`, `lingerie photography` /
+  `zdjęcia strojów kąpielowych`, `zdjęcia bielizny`;
+- **instrukcje** w module (obie wersje językowe) mówią to samo w sekcji 1, żeby ktoś, kto
+  już kupił, wiedział, czego się spodziewać po produkcie spoza kategorii.
+
+Język wzięty z zwalidowanych materiałów, nie wymyślony — `deep-analysis.md` wymienia
+„specjalizację fashion" jako jeden z unikalnych atrybutów wobec konkurencji horyzontalnej.
+
+**Nazwy plików dokumentacji** zmienione na `readme_en.pdf` / `readme_pl.pdf` — to konwencja,
+której PrestaShop używa we własnych modułach. Źródła HTML zostają pod nazwami `user-guide*`,
+bo to one są edytowalne; `tools/build-docs.js` renderuje jedno w drugie.

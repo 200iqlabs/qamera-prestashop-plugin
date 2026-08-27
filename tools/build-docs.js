@@ -15,8 +15,10 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const guides = [
-  { src: 'user-guide.html', out: 'user-guide.pdf' },
-  { src: 'user-guide-pl.html', out: 'user-guide-pl.pdf' },
+  // PrestaShop's own convention for module documentation is docs/readme_<iso>.pdf,
+  // so that is what ships; the HTML beside it stays the editable source.
+  { src: 'user-guide.html', out: 'readme_en.pdf' },
+  { src: 'user-guide-pl.html', out: 'readme_pl.pdf' },
 ];
 
 (async () => {

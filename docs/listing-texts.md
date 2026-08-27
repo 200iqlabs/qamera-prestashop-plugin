@@ -17,8 +17,8 @@
 
 ### Short description
 
-Turn a product photo you already have into gallery-ready packshots and photo sessions —
-without leaving the PrestaShop back office.
+Swimwear and lingerie: turn a photo you already have into packshots and on-model sessions,
+published straight into the product gallery.
 
 ### Long description
 
@@ -31,6 +31,11 @@ Nothing leaves your control on the way: no image is added to your shop until you
 and accepting the same result twice never creates a duplicate. The state of every generation
 lives in your Qamera AI account rather than in the module's database, so reloading the product
 page is safe at any point and never loses a result.
+
+**Built for swimwear and lingerie.** That is the category the models, sceneries and presets
+were tuned on, and where the results are strongest — a specialist studio rather than a
+general-purpose image generator. Products from other categories generally work too, but
+expect to spend a few attempts adjusting the session settings before the result is right.
 
 The module works on PrestaShop 8.x and 9.x, with a Polish and English interface.
 
@@ -64,8 +69,8 @@ and sends back fewer parcels.
 
 ### Keywords
 
-`product photography`, `packshot`, `product images`, `photo studio`, `photo shoot`,
-`catalog images`, `model photos`, `product visuals`
+`swimwear photography`, `lingerie photography`, `product photography`, `packshot`,
+`fashion product images`, `photo studio`, `photo shoot`, `model photos`
 
 ### What are the main steps to install your module?
 
@@ -115,8 +120,8 @@ Support runs through the PrestaShop Addons marketplace.
 
 ### Krótki opis
 
-Zamień zdjęcie, które już masz, w packshoty i sesje produktowe gotowe do galerii — bez
-wychodzenia z panelu PrestaShop.
+Stroje kąpielowe i bielizna: zamień zdjęcie, które już masz, w packshoty i sesje na modelce,
+publikowane wprost w galerii produktu.
 
 ### Opis długi
 
@@ -129,6 +134,11 @@ Po drodze nic nie wymyka się spod kontroli: żadne zdjęcie nie trafia do sklep
 zaakceptujesz, a ponowne zatwierdzenie tego samego wyniku nigdy nie utworzy duplikatu. Stan
 każdej generacji żyje na koncie Qamera AI, nie w bazie modułu — odświeżenie karty produktu
 jest bezpieczne w dowolnym momencie i nigdy nie gubi wyniku.
+
+**Zbudowane pod stroje kąpielowe i bieliznę.** To na tej kategorii dostrojone są modelki,
+scenerie i presety i tam wyniki są najmocniejsze — to studio wyspecjalizowane, nie ogólny
+generator obrazów. Produkty z innych kategorii zwykle też działają, ale liczy się z kilkoma
+podejściami i dostrojeniem ustawień sesji, zanim wynik będzie taki, jak trzeba.
 
 Moduł działa na PrestaShop 8.x i 9.x, interfejs po polsku i angielsku.
 
@@ -161,8 +171,8 @@ paczkę.
 
 ### Słowa kluczowe
 
-`zdjęcia produktowe`, `packshot`, `sesja zdjęciowa`, `fotografia produktowa`,
-`zdjęcia do sklepu`, `katalog produktów`, `zdjęcia na modelce`, `wizualizacje produktu`
+`zdjęcia strojów kąpielowych`, `zdjęcia bielizny`, `zdjęcia produktowe`, `packshot`,
+`sesja zdjęciowa`, `fotografia produktowa`, `zdjęcia na modelce`, `moda`
 
 ### Jak zainstalować moduł — główne kroki
 
@@ -212,10 +222,10 @@ Wsparcie prowadzimy przez marketplace PrestaShop Addons.
 ## Pozostałe pola formularza
 
 | Pole | Wartość |
-|---|---|
+| --- | --- |
 | Ikona 57×57 | `docs/listing-assets/icon-57.png` |
 | Zrzuty ekranu | **`docs/listing-assets/upload/`** — przeskalowane do zakresu, którego wymaga formularz (1000×1000 – 2000×2000). Oryginały w pełnej rozdzielczości leżą katalog wyżej |
-| Instrukcja PDF | `qameraai/docs/user-guide.pdf` (EN) i `user-guide-pl.pdf` (PL) — jedzie też w paczce |
+| Instrukcja PDF | `qameraai/docs/readme_en.pdf` i `readme_pl.pdf` — nazwy zgodne z konwencją PrestaShopa, jadą też w paczce |
 | Tytuł listingu | EN `Qamera AI — product photos and packshots` · PL `Qamera AI — zdjęcia produktowe i packshoty` |
 | Kraje | wszystkie — usługa nie jest ograniczona terytorialnie |
 | Kompatybilność | PrestaShop 8.0.0 – 9.99.99 |
