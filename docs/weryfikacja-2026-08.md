@@ -677,3 +677,32 @@ Język wzięty z zwalidowanych materiałów, nie wymyślony — `deep-analysis.m
 **Nazwy plików dokumentacji** zmienione na `readme_en.pdf` / `readme_pl.pdf` — to konwencja,
 której PrestaShop używa we własnych modułach. Źródła HTML zostają pod nazwami `user-guide*`,
 bo to one są edytowalne; `tools/build-docs.js` renderuje jedno w drugie.
+
+---
+
+## 14. PrestaShop 9.0 sprawdzony — moduł działa (2026-08-27)
+
+Formularz Addons zgłosił coś przy wersji 9.0.0, mimo zaznaczonego zakresu 8.0.0–9.1.5.
+Zanim zawęzimy deklarację „na wszelki wypadek", sprawdziłem, czy 9.0 faktycznie jest problemem.
+
+**Nie jest.** Jednorazowe środowisko na obrazie `prestashop/prestashop:9.0-apache`
+(**PrestaShop 9.0.3**, port 8093, moduł zamontowany na żywo):
+
+| Sprawdzone | Wynik |
+|---|---|
+| `php bin/console prestashop:module install qameraai` | *Install action on module qameraai succeeded* |
+| Zakładka na karcie produktu | renderuje się, przyciski obecne, żadnego komunikatu błędu |
+| Odczyt stanu z API | działa — zakładka pokazała rzeczywisty stan `ps-1` z konta Qamery |
+
+Czyli **9.0 nie wymaga zawężania zakresu**. Cokolwiek zgłosił formularz, nie jest to
+niezgodność modułu z 9.0 — do rozstrzygnięcia potrzebna dokładna treść komunikatu.
+
+**Nie zawężaj do „od 9.0.0".** PrestaShop 8 to wciąż duża baza sklepów, a moduł tam działa:
+generacja na 8.x w czerwcu, kontrola odczytowa na 8.2.7 w tej sesji. Obcięcie 8.x odcięłoby
+te sklepy bez powodu.
+
+Przy okazji potknięcie środowiskowe, znane z czerwca i warte zapamiętania: świeży kontener
+PrestaShopa wstaje z katalogiem `var/` niezapisywalnym dla Apache i panel oddaje 500
+(*Unable to write in the „cache" directory*). Naprawa: `chown -R www-data:www-data
+/var/www/html/var` w kontenerze. Compose tego repo ma to obejście wbudowane, jednorazowe
+środowisko go nie miało.
