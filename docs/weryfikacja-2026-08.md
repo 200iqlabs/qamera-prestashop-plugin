@@ -569,3 +569,53 @@ jak błąd modułu i nim nie jest**; adresy sprawdzone osobno, zwracają `200 im
 
 Praktycznie: zaraz po `--force-recreate` sklep działa przez kilka minut. W tym oknie zrzuty
 wychodzą poprawnie — trzeba je zrobić od razu, a jeśli kafelki są szare, powtórzyć recreate.
+
+---
+
+## 11. Zrzuty zrobione — i sprostowanie w sprawie szarych kafelków
+
+**Komplet materiałów do listingu leży w `docs/listing-assets/`:** ikona 57×57, cała zakładka
+na karcie produktu, panel ustawień sesji, wiersz packshota z wynikiem sesji, panel konta
+i pełny ekran konfiguracji.
+
+### Sprostowanie
+
+Wcześniej (sekcja 9) zapisałem, że szare kafelki w miejscu zdjęcia i packshota to wyłącznie
+skutek awarii portu. **To była połowa prawdy.** Po naprawie transportu wszystkie siedem
+obrazków w zakładce ładowało się poprawnie, a dwa kafelki **dalej** były szare.
+
+Prawdziwa przyczyna tych dwóch: **wiersze, które zostawiła moja własna sonda kontraktowa**
+(sekcja 3) — `ps-1-probe-img` i `ps-1-probe-pk` zarejestrowane na produkcie 1 pod
+identyfikatorami, które nie odwzorowują się na żadne zdjęcie z galerii sklepu. Moduł zachował
+się **poprawnie**: nie mając lokalnego zdjęcia do pokazania, wyrenderował placeholder.
+
+Czyli obie rzeczy były prawdziwe, w różnych momentach: transport rzeczywiście gubił obrazki,
+a niezależnie od tego dwa kafelki opisywały śmieci testowe. Sprzątnięte — packshot sondy
+usunięty przez `DELETE /packshots/{ref}`. Wiersz obrazu sondy zostaje, bo API nie ma
+endpointu do kasowania pojedynczego `product_images`; jest nieszkodliwy, ale wypada
+z kadru przy wybieraniu wiersza do zrzutu.
+
+**Wniosek na przyszłość:** sonda kontraktowa pisze do katalogu produkcyjnego. Następnym razem
+albo osobny produkt testowy pod sondę, albo sprzątanie zaraz po przebiegu.
+
+### Środowisko: obejście zamiast walki
+
+Żeby zrzuty w ogóle wyszły, sklep testowy PS9 został przestawiony:
+
+| Ustawienie | Było | Jest | Po co |
+|---|---|---|---|
+| Domena sklepu | `localhost:8091` | `127.0.0.1:8091` | `localhost` rozwiązuje się na `::1`, gdzie wisi martwe gniazdo (sekcja 9) |
+| `PS_REWRITING_SETTINGS` | `1` | `0` | reguły przepisywania w `.htaccess` są przypięte do nazwy hosta i po zmianie domeny dawały 404 |
+
+Sklep otwierasz teraz pod **`http://127.0.0.1:8091/admin-dev`**. Oba adresy obrazków —
+przyjazny i bezpośredni — zostały sprawdzone i zwracają `200 image/jpeg`, więc zmiana niczego
+w module nie maskuje.
+
+Powrót do stanu wyjściowego, gdyby `localhost` kiedyś wyzdrowiał (restart Docker Desktop):
+
+```
+docker exec qamera-prestashop-plugin-db9-1 mariadb -uroot -proot prestashop -e "
+UPDATE ps_shop_url SET domain='localhost:8091', domain_ssl='localhost:8091';
+UPDATE ps_configuration SET value='localhost:8091' WHERE name IN ('PS_SHOP_DOMAIN','PS_SHOP_DOMAIN_SSL');
+UPDATE ps_configuration SET value='1' WHERE name='PS_REWRITING_SETTINGS';"
+```
