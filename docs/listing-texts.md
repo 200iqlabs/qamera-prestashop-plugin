@@ -228,7 +228,9 @@ Wsparcie prowadzimy przez marketplace PrestaShop Addons.
 | Instrukcja PDF | `qameraai/docs/readme_en.pdf` i `readme_pl.pdf` — nazwy zgodne z konwencją PrestaShopa, jadą też w paczce |
 | Tytuł listingu | EN `Qamera AI — product photos and packshots` · PL `Qamera AI — zdjęcia produktowe i packshoty` |
 | Kraje | wszystkie — usługa nie jest ograniczona terytorialnie |
-| Kompatybilność | PrestaShop 8.0.0 – 9.99.99 |
+| Kompatybilność | zaznacz **8.0.0 – 9.1.x**, czyli to, co faktycznie uruchomiliśmy. **Nie zaznaczaj 9.2.0** — patrz niżej |
+| Product Key | `d0fdc39ec02d6b92a80752639ccf2868` — wpisany w konstruktorze modułu, paczka przebudowana |
+| Changelog | `1.0.0 — pierwsze wydanie.` Jedna linijka zamiast pustego pola |
 | Kategoria | **Content management** — jedyna pasująca w ich liście (Product Page nie było w ofercie) |
 
 ## Wideo — świadomie odpuszczone przy pierwszym zgłoszeniu
@@ -254,3 +256,24 @@ już żyje i widać, czy w ogóle łapie ruch.
   recenzent może zażądać dowodów, a my ich w listingu nie mamy.
 - **Ceny za wygenerowane zdjęcie** — model kredytowy żyje po stronie konta Qamery i zmiana
   cennika unieważniłaby opis, a każda zmiana tekstu to kolejny przegląd.
+
+## Kompatybilność — dlaczego nie 9.2.0
+
+Deklarujemy **8.0.0 – 9.1.x**, bo tyle naprawdę sprawdziliśmy: pełny przebieg generacji na
+**9.1.4**, a na **8.2.7** kontrola odczytowa plus czerwcowy przebieg z generacją. PrestaShop
+9.2 **jeszcze się nie ukazał** — w lipcu 2026 był w fazie zamrożenia funkcji, a na Docker Hubie
+nie ma żadnego obrazu `9.2`, więc nie da się go przetestować nawet gdybyśmy chcieli.
+
+Zaznaczenie wersji, której nie uruchomiliśmy, to obietnica złożona kupującemu. Jeśli na 9.2
+coś nie zadziała, wraca to jako zgłoszenie i jedna gwiazdka — a recenzent techniczny
+PrestaShopa ma prawo to sprawdzić.
+
+`ps_versions_compliancy` w kodzie zostaje szerokie (`8.0.0` – `9.99.99`) i **to nie jest
+niespójność**: ono decyduje, czy PrestaShop w ogóle pozwoli zainstalować moduł, a nie co
+obiecujemy w sklepie. Sklep na 9.2 zainstaluje wtyczkę i najprawdopodobniej będzie działać —
+po prostu tego nie obiecujemy, dopóki nie sprawdzimy.
+
+**Do zrobienia, gdy 9.2 wyjdzie:** przepuścić Core Flow na obrazie 9.2, dopisać wersję na
+listingu. Przy okazji przypomnienie: od 1 lutego 2026 aktualizacja modułu jest odrzucana,
+jeśli produkt nie jest zgodny z najnowszym PrestaShopem — więc to nie jest zadanie „kiedyś",
+tylko warunek następnej aktualizacji.

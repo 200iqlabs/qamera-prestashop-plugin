@@ -52,6 +52,9 @@ class Qameraai extends Module
         $this->author = 'Qamera AI';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => '9.99.99'];
+        // Assigned by PrestaShop Addons when the product page is created. It is
+        // what lets a shop see that an update of this module is available.
+        $this->module_key = 'd0fdc39ec02d6b92a80752639ccf2868';
         $this->bootstrap = true;
 
         parent::__construct();
