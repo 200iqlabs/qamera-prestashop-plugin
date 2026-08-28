@@ -734,3 +734,29 @@ Uwaga porządkowa: PrestaShop przy instalacji nadpisuje `config.xml` modułu wł
 (4 spacje, `confirmUninstall` z kodu, bez `limited_countries`, bez znaku końca linii). Po testach
 w kontenerach plik wracał zmieniony do repo — przywrócony do wersji z repo, bo to ona jest
 źródłem prawdy i to ona ląduje w paczce.
+
+### 15a. Uwaga o zgodności z 9.0.0 — zamknięta jako nieaktualna (2026-08-28)
+
+Na stronie szczegółów modułu wisiała uwaga: *„The declared compatibility range for this product
+does not include PrestaShop 9.0.0."* Sprawdzone: **przeczy jej każde inne miejsce w panelu.**
+
+| Gdzie | Co pokazuje |
+|---|---|
+| Tabela *Versions* na stronie produktu | 1.0.0, opublikowane 27.08.2026, **Compatibility 8.0.0 - 9.1.5** |
+| *Technical validation center* | „Qamera AI — product photos and packshots", PrestaShop version **8.0.0 - 9.1.5**, status **Reviewing**, brak feedbacku |
+| Raport zgodności z 27.08 | *PHP compatibility review — PASSED*, „compatible with the declared versions" |
+| Paczka | `ps_versions_compliancy ['min' => '8.0.0', 'max' => '9.99.99']` |
+| Żywy sklep 9.0.3 (§14) | instalacja przechodzi, zakładka renderuje, odczyt z API działa |
+
+8.0.0 ≤ 9.0.0 ≤ 9.1.5 — zadeklarowany zakres obejmuje 9.0.0. Uwaga jest **kosmetyczna i nieaktualna**,
+niczego nie blokuje: przegląd toczy się normalnie. **Nie wgrywamy nowej wersji** (nie ma w niej czego
+zmienić — ta sama linijka `ps_versions_compliancy` wróciłaby do nich bez zmian, kosztem miejsca w kolejce)
+i **nie zawężamy zakresu do „od 9.0.0"** (odcięłoby PS8 bez przyczyny technicznej).
+
+Dwa ustalenia porządkowe przy okazji: pola *Maximal compatibility* w panelu **nie ma** — jest tylko
+*Minimal compatibility* (podłoga, poniżej której produkt nie jest oferowany; ustawiona na 8.0.0, zgodnie
+z paczką), a górną granicę Addons wylicza z `ps_versions_compliancy`. *Messages* to skrzynka na wątki
+zakładane przez PrestaShopa i klientów — nie da się tam otworzyć nowego; pytania idą przez *Contact us*.
+
+Deklarowane terminy PrestaShopa: do tygodnia na stronę produktu, do dwóch tygodni na walidację techniczną.
+Feedback pojawi się pod ikoną oka w *Validation center*.
