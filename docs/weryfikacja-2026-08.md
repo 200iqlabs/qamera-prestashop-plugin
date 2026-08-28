@@ -706,3 +706,31 @@ PrestaShopa wstaje z katalogiem `var/` niezapisywalnym dla Apache i panel oddaje
 (*Unable to write in the „cache" directory*). Naprawa: `chown -R www-data:www-data
 /var/www/html/var` w kontenerze. Compose tego repo ma to obejście wbudowane, jednorazowe
 środowisko go nie miało.
+
+## 15. Raport zgodności Addons — wszystkie cztery testy zdane (2026-08-28)
+
+PrestaShop przysłał `report_qameraaiv1.0.0_2026-08-28.pdf` — automatyczny raport zgodności
+dla `qameraai` 1.0.0, skan z 27.08.2026. Cztery bloki, wszystkie na zielono:
+
+| Test | Wynik | Co sprawdza |
+|---|---|---|
+| PHP compatibility review | **PASSED** | moduł działa na wszystkich wersjach PHP deklarowanych wersji PrestaShopa |
+| Debug mode | **PASSED** | instalacja i konfiguracja na sklepach w trybie debug — bez błędów i ostrzeżeń |
+| Override examination | **PASSED** | brak konfliktów override'ów z popularnymi modułami |
+| Security certification | **PASSED** | standardowe testy bezpieczeństwa |
+
+**Nic do poprawy.** Raport nie zawiera ani jednej uwagi.
+
+Przy okazji zamyka temat z §14: zdanie *„Your product is compatible with the declared versions
+of PrestaShop and their PHP version"* odnosi się do zakresu, który zadeklarowaliśmy w formularzu,
+czyli **8.0.0–9.1.5**. PrestaShop sam potwierdził ten zakres — deklaracji nie zawężamy.
+Test na 9.0.3 z §14 był więc trafną decyzją: gdybyśmy obcięli 8.x „na wszelki wypadek",
+straciliby my tę bazę sklepów bez żadnej przyczyny technicznej.
+
+Etapy zgłoszenia po tym raporcie: przegląd techniczny przez człowieka (5–10 dni roboczych),
+potem przegląd marketingowy listingu (do 10 dni roboczych na język).
+
+Uwaga porządkowa: PrestaShop przy instalacji nadpisuje `config.xml` modułu własnym formatem
+(4 spacje, `confirmUninstall` z kodu, bez `limited_countries`, bez znaku końca linii). Po testach
+w kontenerach plik wracał zmieniony do repo — przywrócony do wersji z repo, bo to ona jest
+źródłem prawdy i to ona ląduje w paczce.
